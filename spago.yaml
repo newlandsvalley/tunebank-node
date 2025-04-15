@@ -1,0 +1,34 @@
+package:
+  name: tunebank-node
+  dependencies:
+    - abc-parser
+    - argonaut
+    - b64
+    - console
+    - effect
+    - foldable-traversable
+    - httpurple
+    - integers
+    - newtype
+    - node-fs
+    - node-path
+    - prelude
+    - string-parsers
+    - strings
+    - ordered-collections
+    - validation
+    - yoga-postgres
+  test:
+    main: Test.Main
+    dependencies:
+      - aff
+      - effect
+      - spec
+      - spec-node
+workspace:
+  packageSet:
+    registry: 63.9.1
+  extraPackages:  
+    httpurple:
+      git: https://github.com/newlandsvalley/purescript-httpurple.git
+      ref: c37b349b0399ab006e808db9e5865fbe890589ad
