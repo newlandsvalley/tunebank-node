@@ -52,7 +52,7 @@ withAdminAuthorization eAuth p = do
       if (isAdministrator auth.role ) then
         p auth  
       else 
-        customForbidden "This requires admninistrator authorization"
+        customForbidden "This requires administrator authorization"
 
 -- | get the credentials from the HTTP request and check them against the database
 -- | returning either the Authorization or an error
