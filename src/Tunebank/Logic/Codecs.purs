@@ -4,6 +4,8 @@ module Tunebank.Logic.Codecs
   , encodeGenres
   , encodeRhythms
   , encodeTuneRefs 
+  , encodeComments
+  , encodeComment
   , encodeMessage)
    where
 
@@ -13,6 +15,7 @@ import Tunebank.Types
 
 import Data.Argonaut.Encode ((:=), (~>))
 import Data.Argonaut.Core (Json, jsonEmptyObject)
+import Data.Argonaut.Encode.Class (encodeJson)
 
 
 encodeGenres :: Array Genre -> Json 
@@ -26,24 +29,32 @@ encodeRhythms rhythms =
       ~> jsonEmptyObject
 
 encodeTuneRefs :: Array TuneRef -> Json 
-encodeTuneRefs tuneRefs = 
-    "tunes" := tuneRefs     
-      ~> jsonEmptyObject
+encodeTuneRefs = 
+  encodeJson
 
 encodeUserRecords :: Array UserRecord -> Json 
-encodeUserRecords userRecs = 
-    "users" := userRecs    
-      ~> jsonEmptyObject
+encodeUserRecords =
+  encodeJson
+
 
 encodeUserRecord :: UserRecord -> Json 
-encodeUserRecord userRec = 
-    "user" := userRec    
-      ~> jsonEmptyObject
+encodeUserRecord = 
+  encodeJson
 
 encodeMessage :: String -> Json 
 encodeMessage message = 
     "message" := message    
       ~> jsonEmptyObject
+
+encodeComments :: Array Comment -> Json 
+encodeComments = 
+  encodeJson
+
+encodeComment :: Comment -> Json 
+encodeComment = 
+  encodeJson
+
+
 
   
   

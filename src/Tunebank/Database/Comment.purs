@@ -1,5 +1,6 @@
 module Tunebank.Database.Comment 
   ( getComments
+  , getComment
   , deleteComment
   , updateComment
   , insertComment ) 
@@ -9,11 +10,11 @@ module Tunebank.Database.Comment
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe)
-import Data.Either (Either(..))
+import Data.Either (Either(..), note)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (logShow)
-import Yoga.Postgres (Query(Query), Client, query, queryValue, execute)
+import Yoga.Postgres (Query(Query), Client, query, queryValue, queryOne, execute)
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Tune (getTuneId)
@@ -50,6 +51,16 @@ getComments genre title  c = do
                      "from comments where tuneid = $1"
       comments <- query read' (Query queryText :: Query Comment ) [toSql tuneId] c
       pure $ Right comments
+
+getComment :: Int -> Client -> Aff (Either String Comment)
+getComment commentId c = do
+  let 
+    queryText = "select subject, comment as text, submitter, id, " <>
+                " floor(extract (epoch from ts))::integer as timestamp " <>
+                "from comments where id = $1"
+  mComment <- queryOne read' (Query queryText :: Query Comment ) [toSql commentId] c
+  pure $ note ("Comment not found: " <> (show commentId))  mComment
+
 
 getCommentOwner :: Int -> Client -> Aff (Maybe UserName)
 getCommentOwner commentId c = do

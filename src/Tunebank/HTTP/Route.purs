@@ -28,6 +28,7 @@ import HTTPurple.Routes (catchAll)
 import Routing.Duplex (RouteDuplex', optional, root, segment, string, int)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
+import Tunebank.Database.Comment (getComments, getComment)
 import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression)
@@ -38,8 +39,8 @@ import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, w
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
-import Tunebank.Types (Authorization, Genre, Rhythm, UserName, TuneRef)
+import Tunebank.Logic.Codecs (encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
+import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName, TuneRef)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -49,6 +50,8 @@ data Route
   | Tunes Genre
   | Tune Genre String
   | Search Genre SearchParams
+  | Comments Genre String 
+  | Comment Int
   | Users
   | User UserName
   | CheckRequest
@@ -76,7 +79,7 @@ route = root $ sum
   , "Genres": "genre" / noArgs
   , "Rhythms": "genre" / genreSeg
   , "Tunes": "genre" / genreSeg / "tune" 
-  , "Tune": "genre" / genreSeg / "tune" / (string segment)
+  , "Tune": "genre" / genreSeg / "tune" / (string segment) 
   , "Search":  "genre" / genreSeg / "search" ? 
        { title : optional <<< string
        , key : optional <<< string
@@ -90,6 +93,8 @@ route = root $ sum
        }
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
+  , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comment"
+  , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
   , "CatchAll": catchAll
   }
@@ -105,6 +110,8 @@ router { route: Tunes genre } = tunesRoute genre
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
 router { route: Search genre params } = searchRoute genre params 
+router { route: Comments genre title } = commentsRoute genre title
+router { route: Comment id} = commentRoute id
 router { route: Users, headers } = usersRoute headers
 router { route: User user, headers } = userRoute user headers
 router { route: CheckRequest, headers } = routeCheckRequest headers
@@ -189,6 +196,32 @@ upsertTuneRoute genre headers body = do
           eResult <- upsertTune genre auth validatedAbc c
           either customForbidden (const $ ok "") eResult
           
+commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+commentsRoute genre title = do 
+  dbpool :: Pool  <- asks _.dbpool
+  eComments :: (Either String (Array Comment)) <- liftAff $ withClient dbpool $ do
+    getComments genre title
+  case eComments of 
+    Left error -> 
+      customBadRequest error
+    Right comments -> do   
+      let
+        json = stringify $ encodeComments comments
+      ok' jsonHeaders json
+
+commentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> m Response
+commentRoute commentId = do 
+  dbpool :: Pool  <- asks _.dbpool
+  eComment :: (Either String Comment) <- liftAff $ withClient dbpool $ do
+    getComment commentId
+  case eComment of 
+    Left error -> 
+      customBadRequest error
+    Right comment -> do   
+      let
+        json = stringify $ encodeComment comment
+      ok' jsonHeaders json
+
 
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 usersRoute headers = do 
