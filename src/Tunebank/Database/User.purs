@@ -29,7 +29,7 @@ import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValu
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
-import Tunebank.Types (Authorization, Credentials, Email, Password, UserName(..), Role (..), UserRecord)
+import Tunebank.Types (Authorization, Credentials, NewUser, Email, Password, UserName(..), Role (..), UserRecord)
 
 -- | return true if the user exists and is registered
 existsRegisteredUser :: UserName -> Client -> Aff Boolean
@@ -99,19 +99,19 @@ deleteUser user c = do
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
 -- | insert an as yet unregistered user
-insertUnregisteredUser :: UserName -> Password -> Email -> Client -> Aff (Either String String)
-insertUnregisteredUser (UserName user) password email c = do
-  userAlreadyExists <- existsUser (UserName user) c
+insertUnregisteredUser :: NewUser -> Client -> Aff (Either String String)
+insertUnregisteredUser newUser c = do
+  userAlreadyExists <- existsUser (UserName newUser.name) c
   if (userAlreadyExists) then do
-    _ <- liftEffect $ logShow ("username " <> user <> " is already taken")
-    pure $ Left ("username " <> user <> " is already taken")
+    _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
+    pure $ Left ("username " <> newUser.name <> " is already taken")
   else do
     let 
       query = ("insert into users (username, rolename, passwd, email, valid) " <>
                " values ($1, 'normaluser', $2, $3, 'N')")
-    _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> user)
-    _ <- execute (Query query) [ toSql user, toSql password, toSql email ] c
-    pure $ Right ("user " <> user <> " inserted")
+    _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
+    _ <- execute (Query query) [ toSql newUser.name, toSql newUser.password, toSql newUser.email ] c
+    pure $ Right ("user " <> newUser.name <> " inserted")
 
 assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do

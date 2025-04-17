@@ -8,7 +8,8 @@ module Tunebank.HTTP.Route
 import Prelude hiding ((/))
 
 import Control.Monad.Reader (class MonadAsk, asks)
-import Data.Argonaut (stringify)
+import Data.Argonaut (printJsonDecodeError, stringify)
+import Data.Argonaut.Decode (JsonDecodeError)
 import Data.Array (intercalate)
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
@@ -17,6 +18,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (error)
 import Effect.Console (logShow)
 import HTTPurple (Request, Method(..), notFound, ok, ok')
 import HTTPurple.Body (RequestBody)
@@ -33,14 +35,14 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression)
 import Tunebank.Database.Tune (getTuneAbc, getTuneRefs, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecords, getUserRecord)
+import Tunebank.Database.User (getUserRecords, getUserRecord, insertUnregisteredUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
-import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName, TuneRef)
+import Tunebank.Logic.Codecs (decodeNewUser, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
+import Tunebank.Types (Authorization, Comment, Genre, Rhythm, NewUser, UserName, TuneRef)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -77,7 +79,7 @@ route :: RouteDuplex' Route
 route = root $ sum
   { "Home": noArgs
   , "Genres": "genre" / noArgs
-  , "Rhythms": "genre" / genreSeg
+  , "Rhythms": "genre" / genreSeg / "rhythm"
   , "Tunes": "genre" / genreSeg / "tune" 
   , "Tune": "genre" / genreSeg / "tune" / (string segment) 
   , "Search":  "genre" / genreSeg / "search" ? 
@@ -112,6 +114,7 @@ router { route: Tune genre title } = tuneRoute genre title
 router { route: Search genre params } = searchRoute genre params 
 router { route: Comments genre title } = commentsRoute genre title
 router { route: Comment id} = commentRoute id
+router { route: Users, method: Post, body} = registerUserRoute body
 router { route: Users, headers } = usersRoute headers
 router { route: User user, headers } = userRoute user headers
 router { route: CheckRequest, headers } = routeCheckRequest headers
@@ -242,6 +245,23 @@ userRoute user headers = do
   let
     mJson = map (stringify <<< encodeUserRecord ) mUser
   maybe notFound (ok' jsonHeaders) mJson
+
+registerUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+registerUserRoute body = do 
+  jsonString <- Body.toString body
+  {-}
+  let
+    eNewUser :: Either JsonDecodeError NewUser
+    eNewUser = decodeNewUser jsonString
+  -}
+  case (decodeNewUser jsonString) of
+    Left err -> 
+      customBadRequest $ printJsonDecodeError err
+    Right newUser -> do 
+      dbpool :: Pool  <- asks _.dbpool
+      eResult <- liftAff $ withClient dbpool $ do
+        insertUnregisteredUser newUser
+      either customBadRequest ok eResult
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 preflightOptionsRoute = do 

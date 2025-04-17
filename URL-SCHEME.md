@@ -1,49 +1,61 @@
-# URL Scheme
+## URL Scheme
 
 
-URL path segments in italics represent fixed text; those in bold type are variable.  For example, the text 'genre' is fixed whilst **agenre** can be any of _english, irish, scandi, scottish or klezmer_. The following URLs are supported:
+URL path segments in italics represent fixed text; those in bold type are variable.  For example, the text 'genre' is fixed whilst **agenre** can be any of _english, irish, scandi, scottish or klezmer_.
 
-##### Tunes
+The following URLs are supported:
 
-*  GET / _musicrest_ / _genre_ - get a list of genres.
+#### Tunes
 
-*  GET / _musicrest_ / _genre_ / **agenre** - get a list of rhythms appropriate for the genre.
+*  GET / _genre_ - get a list of genres.
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ - get a paged list of tunes.
+*  GET / _genre_ / **agenre** / _rhythm_ - get a list of rhythms appropriate for the genre.
 
-*  POST / _musicrest_ / _genre_ / **agenre** / _tune_ - submit a tune in ABC format.
+*  GET / _genre_ / **agenre** / _tune_ - get a paged list of tunes.
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _exists_ - return true if the genre exists
+*  POST / _genre_ / **agenre** / _tune_ - submit a tune in ABC format.
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** - get a tune in the format suggested by the Accept header.
+*  GET / _genre_ / **agenre** / _exists_ - return true if the genre exists
 
-*  DELETE / _musicrest_ / _genre_  / **agenre** / _tune_ / **title** - delete the tune from the database.
+*  GET / _genre_ / **agenre** / _tune_ / **title** - get a tune in the format suggested by the Accept header.
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / _exists_ - return true if the tune exists
+*  DELETE / _genre_  / **agenre** / _tune_ / **title** - delete the tune from the database.
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / **format** - get a tune the requested format (which can be abc, html, wav, pdf, ps or midi)
+*  GET / _genre_ / **agenre** / _tune_ / **title** / _exists_ - return true if the tune exists
 
-*  GET / _musicrest_ / _genre_ / _search_ - get a paged list of tunes that correspond to the search parameters.
+*  GET / _genre_ / **agenre** / _tune_ / **title** / **format** - get a tune the requested format (which can be abc, pdf or midi)
 
-A user must be logged in before he can submit a tune. Only the original submitter or the *administrator* user is allowed to delete tunes.  
+*  GET / _genre_ / **agenre** / _search_ - get a paged list of tunes that correspond to the search parameters.
+
+A user must be logged in before she can submit a tune. Only the original submitter or a user wth `Administrator` privileges is allowed to update or delete tunes, otherwise a `Forbidden (403)` response is returned.
 
 
-##### Comments
+#### Comments
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / _comments_ - get the comments attached to a tune
+*  GET / _genre_ / **agenre** / _tune_ / **title** / _comments_ - get the comments attached to a tune
 
-*  POST / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / _comments_ - add or edit a comment and attach it to a tune
+*  POST / _genre_ / **agenre** / _tune_ / **title** / _comments_ - add or edit a comment and attach it to a tune
 
-*  GET / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / _comment_ / **auser** / **acommentid** - get a particular comment (written by the user with this id)
+*  GET / _comment_ / **acommentid** - get a particular comment
 
-*  DELETE / _musicrest_ / _genre_ / **agenre** / _tune_ / **title** / _comment_ / **auser** / **acommentid** - delete this comment
+*  DELETE / _comment_ / **acommentid** - delete this comment
 
-*  DELETE / _musicrest_ / _genre_ / **agenre** / _comments_  - delete all comments in the genre
+Only the original submitter of the tune or a user wth `Administrator` privileges is allowed to update or delete comments, otherwise a `Forbidden (403)` response is returned.
 
-##### Users
 
-There is also a fairly conventional set of URLs for user maintenance.
+#### Users
+
+*  GET / _user_  - get a paged list of users 
+*  POST / _user_  - add a new (as yet not fully regsistered) user
+*  GET / _user_ / **username** - get the details of a given user
+
+Only an user with Administrator` privileges is allowed to access user records
+
 
 #### _URL Parameters_
 
-URLs that return lists take optional paging parameters indicating the number of entries on a page and the identity of the page to display. 
+URLs that return lists take optional paging parameters indicating the number of entries on a page and the identity of the page to display. The default is to display the first page with no more than 15 entries to the page.
+
+#### CORS Headers
+
+In order to support requests which emanate from a JavaScript `HttpRequest`, the URL scheme provides appropriate CORS headers.  All responses include an `Access-Control-Allow-Origin` response header and all `POST` or `DELETE` requests induce a set of pre-flight response headers which respond to an `OPTIONS` request that the browser will issue in these cases.

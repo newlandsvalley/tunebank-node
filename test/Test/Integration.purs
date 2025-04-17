@@ -22,6 +22,7 @@ integrationSpec :: Test
 integrationSpec =
   describe "Integration" do
     getRequestsSpec
+    postRequestsSpec
 
 getRequestsSpec :: Test
 getRequestsSpec =
@@ -34,6 +35,15 @@ getRequestsSpec =
     getComment
     getUsers
     getUsersForbidden
+
+
+postRequestsSpec :: Test
+postRequestsSpec =
+  describe "Post requests" do
+    insertNewUser
+    insertExistingUser
+
+-- GET request tests
 
 getHome :: Test
 getHome =
@@ -55,7 +65,7 @@ getRhythms :: Test
 getRhythms =
   it "finds the rhythms route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi"
+    response <- get 8080 Object.empty "/genre/scandi/rhythm"
     response ?= """{"rhythm":["brudmarsch","engelska","gånglåt","halling","hambo","långdans",""" <> 
       """"marsch","polka","polska","schottis","sekstur","skänklåt","slängpolska","waltz"]}"""  
 
@@ -105,6 +115,28 @@ getUsersForbidden =
     response <- get 8080 normalAuthHeaders "/user"
     responseStatus ?= 403
     response ?= """{"message":"This requires administrator authorization"}"""
+
+-- POST request tests
+
+insertNewUser :: Test
+insertNewUser = 
+  it "inserts a genuine new user" do
+  let 
+    newUser = """{"name":"Albert","password":"changeit","email":"princealbert@gmail.com"}"""  
+  response <- post 8080 Object.empty "/user" newUser 
+  -- responseStatus <- getStatus post 8080 Object.empty "/user" newUser 
+  response `shouldSatisfy` contains (Pattern "inserted")
+
+insertExistingUser :: Test
+insertExistingUser = 
+  it "forbids insertion of an existing user" do
+  let 
+    newUser = """{"name":"John","password":"changeit","email":"john.doe@gmail.com"}"""  
+  response <- post 8080 Object.empty "/user" newUser 
+  -- responseStatus <- getStatus post 8080 Object.empty "/user" newUser   
+  response ?= """{"message":"username John is already taken"}"""
+
+
 
 adminAuthHeaders :: Object String
 adminAuthHeaders = 

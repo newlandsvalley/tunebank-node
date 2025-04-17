@@ -7,6 +7,7 @@ module Tunebank.Types
   , GenreRecord
   , Role(..)
   , NewComment
+  , NewUser
   , Password
   , Rhythm(..)
   , RhythmRecord
@@ -143,6 +144,12 @@ type RhythmRecord =
   , rhythm :: Rhythm 
   }
 
+-- | type of an unvalidated user from a registration request
+type NewUser =
+  { name :: String
+  , email :: Email
+  , password :: Password
+  }
 
 -- type returned from a select query of the Users table
 type UserRecord =

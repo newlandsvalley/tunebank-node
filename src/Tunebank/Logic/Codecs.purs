@@ -1,5 +1,6 @@
 module Tunebank.Logic.Codecs
-  ( encodeUserRecords
+  ( decodeNewUser
+  , encodeUserRecords
   , encodeUserRecord
   , encodeGenres
   , encodeRhythms
@@ -13,10 +14,14 @@ import Prelude
 
 import Tunebank.Types
 
+import Data.Argonaut.Decode (JsonDecodeError, parseJson)
+import Data.Argonaut.Decode.Class (decodeJson)
 import Data.Argonaut.Encode ((:=), (~>))
 import Data.Argonaut.Core (Json, jsonEmptyObject)
 import Data.Argonaut.Encode.Class (encodeJson)
+import Data.Either (Either)
 
+-- | encoding
 
 encodeGenres :: Array Genre -> Json 
 encodeGenres genres = 
@@ -53,6 +58,13 @@ encodeComments =
 encodeComment :: Comment -> Json 
 encodeComment = 
   encodeJson
+
+-- decoding 
+
+
+decodeNewUser :: String -> Either JsonDecodeError NewUser
+decodeNewUser s = 
+  decodeJson =<< parseJson s
 
 
 
