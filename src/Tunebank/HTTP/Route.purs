@@ -18,7 +18,6 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (error)
 import Effect.Console (logShow)
 import HTTPurple (Request, Method(..), notFound, ok, ok')
 import HTTPurple.Body (RequestBody)
@@ -35,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression)
 import Tunebank.Database.Tune (getTuneAbc, getTuneRefs, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecords, getUserRecord, insertUnregisteredUser)
+import Tunebank.Database.User (getUserRecord, getUserRecords, insertUnregisteredUser, registerUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
@@ -56,6 +55,8 @@ data Route
   | Comment Int
   | Users
   | User UserName
+  | UserCheck
+  | UserRegister String
   | CheckRequest
   | CatchAll (Array String)
 
@@ -95,6 +96,8 @@ route = root $ sum
        }
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
+  , "UserCheck": "user" / "check" / noArgs
+  , "UserRegister": "user" / "register" / (string segment)
   , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comment"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
@@ -114,9 +117,11 @@ router { route: Tune genre title } = tuneRoute genre title
 router { route: Search genre params } = searchRoute genre params 
 router { route: Comments genre title } = commentsRoute genre title
 router { route: Comment id} = commentRoute id
-router { route: Users, method: Post, body} = registerUserRoute body
+router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute headers
 router { route: User user, headers } = userRoute user headers
+router { route: UserCheck, headers } = checkUserRoute headers
+router { route: UserRegister uuid } = registerUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
 router { route: CatchAll paths } = routeError paths
 
@@ -237,6 +242,14 @@ usersRoute headers = do
         json = stringify $ encodeUserRecords users
       ok' jsonHeaders json
 
+checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
+checkUserRoute headers = do 
+  dbpool :: Pool  <- asks _.dbpool
+  liftAff $ withClient dbpool $ \c -> do
+    eAuth <- getAuthorization headers c
+    withAnyAuthorization eAuth $ \auth -> do
+      ok ("user " <> show auth.user <> " found")
+
 userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
 userRoute user headers = do 
   dbpool :: Pool  <- asks _.dbpool
@@ -246,14 +259,10 @@ userRoute user headers = do
     mJson = map (stringify <<< encodeUserRecord ) mUser
   maybe notFound (ok' jsonHeaders) mJson
 
-registerUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
-registerUserRoute body = do 
+insertUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+insertUserRoute body = do 
   jsonString <- Body.toString body
-  {-}
-  let
-    eNewUser :: Either JsonDecodeError NewUser
-    eNewUser = decodeNewUser jsonString
-  -}
+  {- eNewUser :: Either JsonDecodeError NewUser -}
   case (decodeNewUser jsonString) of
     Left err -> 
       customBadRequest $ printJsonDecodeError err
@@ -262,6 +271,14 @@ registerUserRoute body = do
       eResult <- liftAff $ withClient dbpool $ do
         insertUnregisteredUser newUser
       either customBadRequest ok eResult
+
+
+registerUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
+registerUserRoute uuid = do 
+  dbpool :: Pool  <- asks _.dbpool
+  _ <- liftAff $ withClient dbpool $ do
+    registerUser uuid 
+  ok "registered"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 preflightOptionsRoute = do 

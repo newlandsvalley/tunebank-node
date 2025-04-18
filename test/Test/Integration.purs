@@ -6,15 +6,15 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Data.String.Base64 (encode)
-import Data.String.CodeUnits (contains)
+import Data.String.CodeUnits (contains, length)
 import Data.String.Pattern (Pattern(..))
 import Foreign.Object (Object)
 import Foreign.Object (empty, singleton) as Object
-import Test.Utils (getTestCommentId , withDBConnection)
-import Test.HTTPurple.TestHelpers (Test, awaitStarted, awaitStartedSecure, get, get', getBinary, getHeader, getStatus, post, postBinary, (?=))
-import Test.Spec (describe, it)
+import Test.Utils (getTestCommentId , removeUser, withDBConnection)
+import Test.HTTPurple.TestHelpers (Test, awaitStarted, awaitStartedSecure, get, get', getHeader, getStatus, post, postBinary, (?=))
+import Test.Spec (before_, describe, it)
 import Test.Spec.Assertions.String (shouldStartWith)
-import Test.Spec.Assertions (fail, shouldSatisfy)
+import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 
 -- | Integration tests requre that there is a running tunebank server on localhost:8080
 
@@ -25,7 +25,7 @@ integrationSpec =
     postRequestsSpec
 
 getRequestsSpec :: Test
-getRequestsSpec =
+getRequestsSpec = 
   describe "Get requests" do
     getHome
     getGenres
@@ -35,10 +35,11 @@ getRequestsSpec =
     getComment
     getUsers
     getUsersForbidden
+    registerUser
 
 
 postRequestsSpec :: Test
-postRequestsSpec =
+postRequestsSpec = before_ (removeUser "Albert") do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
@@ -116,6 +117,17 @@ getUsersForbidden =
     responseStatus ?= 403
     response ?= """{"message":"This requires administrator authorization"}"""
 
+
+registerUser :: Test
+registerUser =
+  it "registers the user" do
+    awaitStarted 8080
+    -- use Jim's registration id from the static SQL used to initialise the test database
+    _ <- get 8080 Object.empty "/user/register/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"
+    response <- get 8080 Object.empty "/user/Jim"
+    response `shouldStartWith` """{"valid":"Y"""
+
+
 -- POST request tests
 
 insertNewUser :: Test
@@ -124,8 +136,8 @@ insertNewUser =
   let 
     newUser = """{"name":"Albert","password":"changeit","email":"princealbert@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
-  -- responseStatus <- getStatus post 8080 Object.empty "/user" newUser 
-  response `shouldSatisfy` contains (Pattern "inserted")
+  -- a successful user insert returns a 36-character regsitration uuid
+  (length response) `shouldEqual` 36
 
 insertExistingUser :: Test
 insertExistingUser = 
@@ -133,7 +145,6 @@ insertExistingUser =
   let 
     newUser = """{"name":"John","password":"changeit","email":"john.doe@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
-  -- responseStatus <- getStatus post 8080 Object.empty "/user" newUser   
   response ?= """{"message":"username John is already taken"}"""
 
 

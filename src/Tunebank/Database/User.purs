@@ -13,9 +13,7 @@ module Tunebank.Database.User
   , registerUser
   , changeUserPassword
   , validateUser
-  , validateCredentials
-  , withNormalUserAuth
-  , withAdminAuth) where
+  , validateCredentials) where
 
 import Prelude
 
@@ -81,10 +79,12 @@ getUserRecords c = do
   query_ read' (Query "select username, email, rolename as role, valid from users" :: Query UserRecord) c
 
 -- | register a user by setting the valid flag
-registerUser :: UserName -> Client -> Aff Unit
-registerUser (UserName user) c = do
-  _ <- liftEffect $ logShow ("trying to authorise user " <> user)
-  execute (Query "update users set valid = 'Y' where username = $1") [ toSql user ] c
+registerUser :: String -> Client -> Aff Unit
+registerUser uuid c = do
+  _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
+  let 
+    query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
+  execute (Query query) [ toSql uuid ] c
 
 -- | register a user by setting the valid flag
 changeUserPassword :: UserName -> Password -> Client -> Aff Unit
@@ -98,7 +98,7 @@ deleteUser user c = do
   -- _ <- liftEffect $ logShow ("trying to delete user " <> user)
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
--- | insert an as yet unregistered user
+-- | insert an as yet unregistered user, returning the UUID needed for the eventual registration
 insertUnregisteredUser :: NewUser -> Client -> Aff (Either String String)
 insertUnregisteredUser newUser c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
@@ -107,11 +107,12 @@ insertUnregisteredUser newUser c = do
     pure $ Left ("username " <> newUser.name <> " is already taken")
   else do
     let 
-      query = ("insert into users (username, rolename, passwd, email, valid) " <>
-               " values ($1, 'normaluser', $2, $3, 'N')")
+      queryText = ("insert into users (username, rolename, passwd, email, valid) " <>
+                  " values ($1, 'normaluser', $2, $3, 'N' )" <> 
+                  " returning CAST(registrationid AS CHAR(36))")
     _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
-    _ <- execute (Query query) [ toSql newUser.name, toSql newUser.password, toSql newUser.email ] c
-    pure $ Right ("user " <> newUser.name <> " inserted")
+    mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String)) [ toSql newUser.name, toSql newUser.password, toSql newUser.email ] c
+    pure $ note ("user insert failed for " <> newUser.name) (join mResult)
 
 assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do
@@ -132,7 +133,7 @@ assertIsAdministrator user c = do
     _ -> 
       liftEffect $ throw ("user " <> (show user) <> " has insufficient authority")
 
-
+{-
 isAdministrator :: UserName -> Client -> Aff Boolean
 isAdministrator user c = do
   mRole <- getUserRole user c 
@@ -155,6 +156,7 @@ withNormalUserAuth user c p = do
     p user
   else do
     pure $ Left $ error ("No such user " <> (show user))
+-}
 
 
 getUserCount :: String -> Client -> Aff Int

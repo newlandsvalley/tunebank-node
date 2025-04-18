@@ -5,7 +5,7 @@ An experimental rewrite of the [musicrest](https://github.com/newlandsvalley/mus
 
 ## URL Scheme
 
-The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/master/URL-SCHEME.md) is somewhat simplified from that of `musicrest`. The main differences between the two are summarised [here](ttps://github.com/newlandsvalley/Tunebank-node/blob/master/DIFFERENCES.md).
+The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/master/URL-SCHEME.md) is somewhat simplified from that of `musicrest`. The main differences between the two are summarised [here](https://github.com/newlandsvalley/Tunebank-node/blob/master/DIFFERENCES.md).
 
 ## Building 
 
