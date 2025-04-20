@@ -47,6 +47,7 @@ import Type.Prelude (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Copied wholesale from the integration test helpers in HTTPurple itself
+-- | but with the further addition of the delete request type
 
 awaitStarted :: Int -> Aff Unit
 awaitStarted port =
@@ -221,6 +222,16 @@ postBinary ::
   Buffer ->
   Aff String
 postBinary port headers path = request false port "POST" headers path >=> toString
+
+-- | Run an HTTP DELETE with the given url and return an Aff that contains the
+-- | string with the response body.
+delete ::
+  Int ->
+  Object String ->
+  String ->
+  Aff String
+delete port headers path = request' false port "DELETE" headers path >>= toString
+
 
 -- | Convert a request to an Aff containing the string with the given header
 -- | value.

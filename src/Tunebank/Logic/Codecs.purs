@@ -1,5 +1,6 @@
 module Tunebank.Logic.Codecs
-  ( decodeNewUser
+  ( decodeNewComment
+  , decodeNewUser
   , encodeUserRecords
   , encodeUserRecord
   , encodeGenres
@@ -64,6 +65,11 @@ encodeComment =
 
 decodeNewUser :: String -> Either JsonDecodeError NewUser
 decodeNewUser s = 
+  decodeJson =<< parseJson s
+
+
+decodeNewComment :: String -> Either JsonDecodeError NewComment
+decodeNewComment s = 
   decodeJson =<< parseJson s
 
 

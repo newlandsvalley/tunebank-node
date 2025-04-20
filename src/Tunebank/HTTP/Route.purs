@@ -29,7 +29,7 @@ import HTTPurple.Routes (catchAll)
 import Routing.Duplex (RouteDuplex', optional, root, segment, string, int)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
-import Tunebank.Database.Comment (getComments, getComment)
+import Tunebank.Database.Comment (deleteComment, deleteComments, getComments, getComment, insertComment, updateComment)
 import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression)
@@ -40,7 +40,7 @@ import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, w
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (decodeNewUser, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
 import Tunebank.Types (Authorization, Comment, Genre, Rhythm, NewUser, UserName, TuneRef)
 import Yoga.Postgres (Pool, withClient)
 
@@ -109,13 +109,19 @@ router :: forall m. MonadAff m => MonadAsk Env m => Request Route -> m Response
 router { route: Home } = homeRoute
 router { route: Genres } = genreRoute
 router { route: Rhythms genre } = rhythmRoute genre
-router { route: Tunes genre, method : Options } = preflightOptionsRoute
+router { route: Tunes _genre, method : Options } = preflightOptionsRoute
 router { route: Tunes genre, method : Post, headers, body } = upsertTuneRoute genre headers body
 router { route: Tunes genre } = tunesRoute genre
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
 router { route: Search genre params } = searchRoute genre params 
+router { route: Comments _genre _title, method: Options } = preflightOptionsRoute
+router { route: Comments genre title, method: Post, headers, body } = addCommentRoute genre title headers body
+router { route: Comments genre title, method: Delete, headers } = deleteTuneCommentsRoute genre title headers
 router { route: Comments genre title } = commentsRoute genre title
+router { route: Comment _id, method: Options } = preflightOptionsRoute
+router { route: Comment id, method: Delete, headers } = deleteCommentRoute id headers
+router { route: Comment id, method: Post, headers, body } = updateCommentRoute id body headers 
 router { route: Comment id} = commentRoute id
 router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute headers
@@ -217,6 +223,21 @@ commentsRoute genre title = do
         json = stringify $ encodeComments comments
       ok' jsonHeaders json
 
+addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> RequestBody -> m Response
+addCommentRoute genre title headers body = do 
+  dbpool :: Pool  <- asks _.dbpool 
+  jsonString <- Body.toString body
+  {- eNewComment :: Either JsonDecodeError NewComment -}
+  case (decodeNewComment jsonString) of
+    Left err -> 
+      customBadRequest $ printJsonDecodeError err
+    Right newComment -> do 
+      liftAff $ withClient dbpool $ \c -> do
+        eAuth ::  Either String Authorization <- getAuthorization headers c
+        withAnyAuthorization eAuth $ \auth -> do
+          eResult :: Either String Int <- insertComment genre title newComment auth.user c
+          either customForbidden (show >>> ok) eResult
+          
 commentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> m Response
 commentRoute commentId = do 
   dbpool :: Pool  <- asks _.dbpool
@@ -230,6 +251,39 @@ commentRoute commentId = do
         json = stringify $ encodeComment comment
       ok' jsonHeaders json
 
+deleteCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestHeaders -> m Response
+deleteCommentRoute commentId headers = do 
+  dbpool :: Pool  <- asks _.dbpool 
+  liftAff $ withClient dbpool $ \c -> do
+    eAuth ::  Either String Authorization <- getAuthorization headers c
+    withAnyAuthorization eAuth $ \auth -> do
+      eResult <- deleteComment commentId auth c
+      either customForbidden (const $ ok "") eResult
+
+deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
+deleteTuneCommentsRoute genre title headers = do 
+  dbpool :: Pool  <- asks _.dbpool 
+  liftAff $ withClient dbpool $ \c -> do
+    eAuth ::  Either String Authorization <- getAuthorization headers c
+    withAdminAuthorization eAuth $ \_auth -> do
+      _result <- deleteComments genre title c
+      ok ""
+
+updateCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestBody -> RequestHeaders -> m Response
+updateCommentRoute id body headers = do 
+  _ <- liftEffect $ logShow ("update comment " <> show id)
+  jsonString <- Body.toString body
+  {- eNewComment :: Either JsonDecodeError NewComment -}
+  case (decodeNewComment jsonString) of
+    Left err -> 
+      customBadRequest $ printJsonDecodeError err
+    Right updatedComment -> do 
+      dbpool :: Pool  <- asks _.dbpool 
+      liftAff $ withClient dbpool $ \c -> do
+        eAuth ::  Either String Authorization <- getAuthorization headers c
+        withAnyAuthorization eAuth $ \auth -> do
+          eResult <- updateComment id updatedComment auth c
+          either customForbidden (const $ ok "") eResult
 
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 usersRoute headers = do 

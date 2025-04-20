@@ -8,36 +8,24 @@ The following URLs are supported:
 #### Tunes
 
 *  GET / _genre_ - get a list of genres.
-
 *  GET / _genre_ / **agenre** / _rhythm_ - get a list of rhythms appropriate for the genre.
-
 *  GET / _genre_ / **agenre** / _tune_ - get a paged list of tunes.
-
 *  POST / _genre_ / **agenre** / _tune_ - submit a tune in ABC format.
-
 *  GET / _genre_ / **agenre** / _exists_ - return true if the genre exists
-
 *  GET / _genre_ / **agenre** / _tune_ / **title** - get a tune in the format suggested by the Accept header.
-
 *  DELETE / _genre_  / **agenre** / _tune_ / **title** - delete the tune from the database.
-
 *  GET / _genre_ / **agenre** / _tune_ / **title** / _exists_ - return true if the tune exists
-
 *  GET / _genre_ / **agenre** / _tune_ / **title** / **format** - get a tune the requested format (which can be abc, pdf or midi)
-
 *  GET / _genre_ / **agenre** / _search_ - get a paged list of tunes that correspond to the search parameters.
 
 A user must be logged in before she can submit a tune. Only the original submitter or a user wth `Administrator` privileges is allowed to update or delete tunes, otherwise a `Forbidden (403)` response is returned.
 
-
 #### Comments
 
 *  GET / _genre_ / **agenre** / _tune_ / **title** / _comments_ - get the comments attached to a tune
-
-*  POST / _genre_ / **agenre** / _tune_ / **title** / _comments_ - add or edit a comment and attach it to a tune
-
+*  POST / _genre_ / **agenre** / _tune_ / **title** / _comments_ - add a comment and attach it to a tune
 *  GET / _comment_ / **acommentid** - get a particular comment
-
+*  POST / _comment_ / **acommentid** - update a particular comment
 *  DELETE / _comment_ / **acommentid** - delete this comment
 
 Only the original submitter of the tune or a user wth `Administrator` privileges is allowed to update or delete comments, otherwise a `Forbidden (403)` response is returned.
@@ -46,6 +34,7 @@ Only the original submitter of the tune or a user wth `Administrator` privileges
 #### Users
 
 *  GET / _user_  - get a paged list of users 
+*  GET / _user_  / _register_ / **uuid** - register a user
 *  POST / _user_  - add a new (as yet not fully regsistered) user
 *  GET / _user_ / **username** - get the details of a given user
 

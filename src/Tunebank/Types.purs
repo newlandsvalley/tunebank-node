@@ -178,13 +178,13 @@ type TuneMetadata =
   , abc :: String
   }
 
+-- | A comment submitted from the client
 type NewComment = 
   { subject :: String 
   , text :: String 
-  , submitter :: UserName
   }
 
-
+-- | A comment returned from the database
 type Comment = 
   { subject :: String 
   , text :: String 

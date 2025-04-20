@@ -2,6 +2,7 @@ module Tunebank.Database.Comment
   ( getComments
   , getComment
   , deleteComment
+  , deleteComments
   , updateComment
   , insertComment ) 
   
@@ -18,13 +19,12 @@ import Yoga.Postgres (Query(Query), Client, query, queryValue, queryOne, execute
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Tune (getTuneId)
-import Tunebank.Database.User (getUserRole)
-import Tunebank.Types (Authorization, Title, UserName(..), Genre, Role(..), Comment, NewComment, isAdministrator)
+import Tunebank.Types (Authorization, Title, UserName(..), Genre, Comment, NewComment, isAdministrator)
 import Tunebank.Database.Utils (maybeStringResult, read', singleIntResult)
 
 
-insertComment :: Genre -> Title -> NewComment -> Client -> Aff (Either String Int)
-insertComment genre title comment c = do
+insertComment :: Genre -> Title -> NewComment -> UserName -> Client -> Aff (Either String Int)
+insertComment genre title comment (UserName user) c = do
   mTuneId <- getTuneId genre title c
   case mTuneId of 
     Nothing -> do 
@@ -33,7 +33,7 @@ insertComment genre title comment c = do
       let 
         queryText = "insert into comments ( tuneid, subject, comment, submitter) " <>
                     " values ($1, $2, $3, $4 ) returning id"
-        params = [toSql tuneId, toSql comment.subject, toSql comment.text, toSql comment.submitter] 
+        params = [toSql tuneId, toSql comment.subject, toSql comment.text, toSql user] 
       -- _ <- liftEffect $ logShow ("trying to insert tune " <> vAbc.title)
       (mCommentId :: (Maybe Int))  <- queryValue singleIntResult (Query queryText :: Query Int) params c
       pure $ maybe (Left "comment insertion seems to have failed") Right mCommentId
@@ -87,17 +87,22 @@ deleteComment commentId auth c = do
     Nothing -> 
       pure $ Left ("comment: " <> (show commentId) <> " not found")
 
+-- | delete all comments for a tune
+deleteComments :: Genre -> Title -> Client -> Aff Unit
+deleteComments genre title  c = do
+  _ <- liftEffect $ logShow ("trying to delete all comments for tune " <> title)
+  let 
+    query = "delete from comments where tuneid in (select id from tunes where genre = $1 and title = $2)"
+  _ <- execute (Query query) [toSql genre, toSql title] c
+  pure unit
 
-updateComment :: Int -> NewComment -> Client -> Aff (Either String Unit)
-updateComment commentId comment c = do
+updateComment :: Int -> NewComment -> Authorization -> Client -> Aff (Either String Unit)
+updateComment commentId comment auth c = do
   _ <- liftEffect $ logShow ("trying to update comment " <> (show commentId))
   mOwner <- getCommentOwner commentId c
-  mRole <- getUserRole comment.submitter c
-  let 
-    userRole = maybe (Role "normaluser") identity mRole
   case mOwner of 
     (Just owner) -> do
-      if (comment.submitter == owner || isAdministrator userRole) then do
+      if (auth.user == owner || isAdministrator auth.role) then do
         _ <- execute (Query "update comments set subject = $1, comment = $2 where id = $3 ") 
            [ toSql comment.subject, toSql comment.text, toSql commentId ] c
         pure $ Right unit

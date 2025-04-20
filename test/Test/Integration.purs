@@ -4,17 +4,20 @@ module Test.Integration
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Int (fromString)
+import Data.Maybe (Maybe(..), isJust)
 import Data.String.Base64 (encode)
 import Data.String.CodeUnits (contains, length)
 import Data.String.Pattern (Pattern(..))
+import Effect.Class (liftEffect)
+import Effect.Console (logShow)
 import Foreign.Object (Object)
 import Foreign.Object (empty, singleton) as Object
-import Test.Utils (getTestCommentId , removeUser, withDBConnection)
-import Test.HTTPurple.TestHelpers (Test, awaitStarted, awaitStartedSecure, get, get', getHeader, getStatus, post, postBinary, (?=))
+import Test.HTTPurple.TestHelpers (Test, awaitStarted, awaitStartedSecure, delete, get, get', getHeader, getStatus, post, postBinary, (?=))
 import Test.Spec (before_, describe, it)
+import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy, shouldNotSatisfy)
 import Test.Spec.Assertions.String (shouldStartWith)
-import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
+import Test.Utils (getInitialCommentId, getTestCommentId, removeCommentsFrom, removeUser, withDBConnection)
 
 -- | Integration tests requre that there is a running tunebank server on localhost:8080
 
@@ -23,6 +26,7 @@ integrationSpec =
   describe "Integration" do
     getRequestsSpec
     postRequestsSpec
+    deleteRequestsSpec
 
 getRequestsSpec :: Test
 getRequestsSpec = 
@@ -39,10 +43,23 @@ getRequestsSpec =
 
 
 postRequestsSpec :: Test
-postRequestsSpec = before_ (removeUser "Albert") do
+postRequestsSpec = before_ prepareDB do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
+    insertComment
+    updateComment
+    forbidUpdateToComment
+
+  where 
+    prepareDB = do 
+      removeUser "Albert"
+
+
+deleteRequestsSpec :: Test
+deleteRequestsSpec = do
+  describe "Delete requests" do
+    forbidDeleteComment
 
 -- GET request tests
 
@@ -147,12 +164,72 @@ insertExistingUser =
   response <- post 8080 Object.empty "/user" newUser 
   response ?= """{"message":"username John is already taken"}"""
 
+insertComment :: Test 
+insertComment = 
+  it "inserts a comment if authorized" do
+  let   
+    newComment = """{"subject":"This is Bert's new comment to Elverumspols",""" <> 
+                 """"text":"the comment has been inserted through the integration tests"}"""
+    bertHeaders = authHeadersFor "Bert"
+    url = "/genre/scandi/tune/getingen/comment" 
+  _ <- liftEffect $ logShow $ "insert comment - trying POST to " <> url
+  _ <- delete 8080 adminAuthHeaders url 
+  response <- post 8080 bertHeaders url newComment
+  -- we should get an integer comment id
+  response `shouldSatisfy` (fromString >>> isJust)
+
+updateComment :: Test 
+updateComment = 
+  it "updates a comment if authorized" do
+  let   
+    updatedComment = """{"subject":"This is John's update to John's comment",""" <> 
+                     """"text":"the comment has been updated through the integration tests"}"""
+    johnHeaders = authHeadersFor "John"
+  commentId <- withDBConnection $ getInitialCommentId
+  let 
+    url = "/comment/" <> (show commentId)
+  -- _ <- liftEffect $ logShow $ "update comment - trying POST to " <> url
+  response <- post 8080 johnHeaders url updatedComment
+  response `shouldEqual` ""
 
 
+forbidUpdateToComment :: Test 
+forbidUpdateToComment = 
+  it "forbids a normal user from updating another user's comment" do
+  let   
+    updatedComment = """{"subject":"This is Bert's updated to John's comment",""" <> 
+                     """"text":"the comment has been updated through the integration tests"}"""
+    bertHeaders = authHeadersFor "Bert"
+  commentId <- withDBConnection $ getInitialCommentId
+  let 
+    url = "/comment/" <> (show commentId)
+  -- _ <- liftEffect $ logShow $ "update comment - trying POST to " <> url
+  response <- post 8080 bertHeaders url updatedComment
+  response `shouldEqual` """{"message":"Only the original comment submitter or an administrator can update a comment"}""" 
+
+-- DELETE request tests
+
+forbidDeleteComment :: Test
+forbidDeleteComment =
+  it "forbids a normal user from deleting another user's comment" do
+  let   
+    bertHeaders = authHeadersFor "Bert"
+  commentId <- withDBConnection $ getInitialCommentId
+  let 
+    url = "/comment/" <> (show commentId)
+  response <- delete 8080 bertHeaders url
+  response `shouldEqual` """{"message":"Only the original comment submitter or an administrator can delete a comment"}""" 
+
+-- Basic Auth headers for different users
 adminAuthHeaders :: Object String
 adminAuthHeaders = 
   Object.singleton "authorization" $ "Basic " <> (encode "Administrator:changeit")
 
 normalAuthHeaders :: Object String
 normalAuthHeaders = 
-  Object.singleton "authorization" $ "Basic " <> (encode "John:changeit")
+  -- Object.singleton "authorization" $ "Basic " <> (encode "John:changeit")
+  authHeadersFor "John"
+
+authHeadersFor :: String -> Object String
+authHeadersFor user = 
+  Object.singleton "authorization" $ "Basic " <> (encode (user <> ":changeit"))

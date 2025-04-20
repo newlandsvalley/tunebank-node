@@ -2,6 +2,7 @@ module Test.Utils
   ( getTestCommentId 
   , getInitialCommentId
   , getRegistrationId
+  , removeCommentsFrom
   , removeUser
   , withDBConnection) 
   where
@@ -17,7 +18,7 @@ import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult)
 import Tunebank.Database.User (deleteUser)
 import Tunebank.Environment (connectionInfo)
-import Tunebank.Database.Comment (getComments)
+import Tunebank.Database.Comment (getComments, deleteComments)
 import Tunebank.Types (Genre(..), UserName(..))
 import Partial.Unsafe (unsafeCrashWith)
 
@@ -61,6 +62,14 @@ removeUser :: String -> Aff Unit
 removeUser user = 
   withDBConnection do 
     deleteUser (UserName user)
+
+
+-- | remove all comments from the named tune
+removeCommentsFrom :: String -> Aff Unit
+removeCommentsFrom title = 
+  withDBConnection do 
+    deleteComments (Genre "scandi") title
+
 
 -- | query the test database
 withDBConnection :: forall a. (Client -> Aff a) -> Aff a
