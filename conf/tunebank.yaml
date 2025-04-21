@@ -6,8 +6,8 @@ db:
   host: localhost
   database: tunedbtest
   port: 5432
-  user: tunebank_api
-  password: Brudmarsch
+  user: app_db_user
+  password: changeit
   ssl: false
 
 paging: 
