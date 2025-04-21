@@ -133,8 +133,8 @@ router { route: CatchAll paths } = routeError paths
 
 homeRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 homeRoute = do 
-  myName <- asks _.name
-  ok ("tunebank 0.0.1 " <> myName)
+  paging <- asks _.paging
+  ok ("tunebank 0.0.1 default page size" <> show paging.defaultSize)
 
 
 genreRoute :: forall m. MonadAff m => MonadAsk Env m => m Response

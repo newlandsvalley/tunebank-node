@@ -16,6 +16,7 @@ import Effect.Aff (Aff)
 import Yoga.Postgres (Query(Query), Client, queryValue_, queryValue, mkPool, withClient)
 import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult)
+import Tunebank.Config (testClientConfig)
 import Tunebank.Database.User (deleteUser)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Database.Comment (getComments, deleteComments)
@@ -74,5 +75,5 @@ removeCommentsFrom title =
 -- | query the test database
 withDBConnection :: forall a. (Client -> Aff a) -> Aff a
 withDBConnection execution = do
-  pool <- liftEffect $ mkPool connectionInfo
+  pool <- liftEffect $ mkPool $ connectionInfo testClientConfig
   withClient pool execution

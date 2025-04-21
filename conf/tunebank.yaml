@@ -1,0 +1,26 @@
+server:
+  host: localhost
+  port: 8080
+
+db:
+  host: localhost
+  database: tunedbtest
+  port: 5432
+  user: tunebank_api
+  password: Brudmarsch
+  ssl: false
+
+paging: 
+  defaultSize: 15
+
+mail:
+  host: smtp.gmail.com
+  port: 587
+  login: youraccount@gmail.com
+  password: changeit
+  fromAddress: youraccount@gmail.com
+
+security:
+  corsOrigins: 
+    - http://localhost:9000"
+    - http://foreignserver.com"

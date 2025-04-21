@@ -17,6 +17,7 @@ package:
     - strings
     - ordered-collections
     - validation
+    - yaml-next
     - yoga-postgres
   test:
     main: Test.Main
@@ -32,3 +33,14 @@ workspace:
     httpurple:
       git: https://github.com/newlandsvalley/purescript-httpurple.git
       ref: c37b349b0399ab006e808db9e5865fbe890589ad
+    yaml-next:
+      dependencies:
+        - argonaut-codecs
+        - argonaut-core
+        - effect
+        - foreign
+        - functions
+        - ordered-collections
+        - unsafe-coerce
+      git: https://github.com/nsaunders/purescript-yaml-next.git
+      ref: 478e170d26467a63f67fed8c69355aa980049418

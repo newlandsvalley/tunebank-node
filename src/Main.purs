@@ -2,27 +2,36 @@ module Main where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadAsk, asks, runReaderT)
-import Data.Generic.Rep (class Generic)
+import Control.Monad.Reader (runReaderT)
+import Data.Either (Either(..))
 import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import HTTPurple (ServerM, ok, serve')
-import Routing.Duplex as RD
-import Routing.Duplex.Generic as RG
+import HTTPurple (serve')
 
-import Tunebank.HTTP.Route (Route, route, router)
-import Yoga.Postgres (Client, Query(Query), execute_, mkPool, withClient)
-import Tunebank.Environment (Env, buildEnv)
+import Tunebank.HTTP.Route (route, router)
+import Tunebank.Config (TunebankConfig, loadConfig)
+import Tunebank.Environment (buildEnv)
 
+type ServerAffM = Aff (Effect Unit -> Effect Unit)
 
+main :: Effect Unit
+main = launchAff_ do 
+  eConfig <- loadConfig  
+  case eConfig of 
+    Right config -> do
+      _ <- runServer config
+      pure unit
+    Left err -> 
+      liftEffect $ log err 
 
 
 -- | Boot up the server
-main :: ServerM
-main = do
-  env <- liftEffect buildEnv
-  serve' (\a -> runReaderT a env ) { hostname: "localhost", port: 8080, onStarted } { route, router }
+runServer :: TunebankConfig -> ServerAffM
+runServer config = do
+  env <- liftEffect $ buildEnv config
+  liftEffect $ serve' (\a -> runReaderT a env ) { hostname: config.server.host , port: config.server.port, onStarted } { route, router }
   where
   onStarted = do
     log " ┌───────────────────────────────────────┐"
@@ -30,7 +39,7 @@ main = do
     log " │                                       │"
     log " │ To test, run:                         │"
     log " │  > curl -v localhost:8080             │"
-    log " │    # => hello, joe                    │"
+    log " │    # => tunebank 0.0.1                │"
     log " └───────────────────────────────────────┘"
 
 

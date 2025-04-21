@@ -1,6 +1,9 @@
 module Tunebank.Tools.Loader 
   (uploadTunes) where
 
+-- | WARNING - Just uses the Test database connection at the moment
+-- | And curently only used in testing
+
 import Prelude
 
 import Effect.Class (liftEffect)
@@ -15,7 +18,9 @@ import Node.Path (FilePath, concat, normalize)
 import Tunebank.Logic.Api (upsertValidatedTune)
 import Yoga.Postgres (Client, mkPool, withClient)
 import Tunebank.Types (Genre, UserName(..), Role(..))
+import Tunebank.Config (testClientConfig)
 import Tunebank.Environment (connectionInfo)
+
 
 uploadTunes :: Genre -> FilePath -> Aff Unit
 uploadTunes genre dirPath = do
@@ -25,7 +30,7 @@ uploadTunes genre dirPath = do
     message = "found " <> (show $ length files) <> " files"
   _ <- liftEffect $ log message
 
-  pool <- liftEffect $ mkPool connectionInfo
+  pool <- liftEffect $ mkPool $ connectionInfo testClientConfig
   withClient pool $ \c -> do
     _ <- traverse (uploadFile c >>> logResult) files
     pure unit

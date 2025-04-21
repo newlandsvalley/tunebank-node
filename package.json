@@ -9,9 +9,11 @@
   "scripts": {
     "build": "spago build"
   },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "pg": "^8.14.1"
+  },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "pg": "^8.14.1",
     "purescript": "^0.15.15",
     "spago": "^0.93.42"
   }

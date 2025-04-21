@@ -21,6 +21,7 @@
             "string-parsers",
             "strings",
             "validation",
+            "yaml-next",
             "yoga-postgres"
           ],
           "build_plan": [
@@ -116,6 +117,7 @@
             "untagged-union",
             "validation",
             "variant",
+            "yaml-next",
             "yoga-postgres"
           ]
         },
@@ -739,6 +741,19 @@
       "httpurple": {
         "git": "https://github.com/newlandsvalley/purescript-httpurple.git",
         "ref": "c37b349b0399ab006e808db9e5865fbe890589ad"
+      },
+      "yaml-next": {
+        "git": "https://github.com/nsaunders/purescript-yaml-next.git",
+        "ref": "478e170d26467a63f67fed8c69355aa980049418",
+        "dependencies": [
+          "argonaut-codecs",
+          "argonaut-core",
+          "effect",
+          "foreign",
+          "functions",
+          "ordered-collections",
+          "unsafe-coerce"
+        ]
       }
     }
   },
@@ -2262,6 +2277,20 @@
         "prelude",
         "record",
         "tuples",
+        "unsafe-coerce"
+      ]
+    },
+    "yaml-next": {
+      "type": "git",
+      "url": "https://github.com/nsaunders/purescript-yaml-next.git",
+      "rev": "478e170d26467a63f67fed8c69355aa980049418",
+      "dependencies": [
+        "argonaut-codecs",
+        "argonaut-core",
+        "effect",
+        "foreign",
+        "functions",
+        "ordered-collections",
         "unsafe-coerce"
       ]
     },
