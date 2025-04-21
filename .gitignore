@@ -1,10 +1,11 @@
 
+
+conf/
 node_modules/
 .pulp-cache/
 output/
 output-es/
 generated-docs/
-conf/tunebank.yaml
 .psc-package/
 .psc*
 .purs*
