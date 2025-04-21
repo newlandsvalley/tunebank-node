@@ -4,6 +4,7 @@ node_modules/
 output/
 output-es/
 generated-docs/
+conf/tunebank.yaml
 .psc-package/
 .psc*
 .purs*
