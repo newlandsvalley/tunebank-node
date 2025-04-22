@@ -13,10 +13,9 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff)
-import Yoga.Postgres (Query(Query), Client, queryValue_, queryValue, mkPool, withClient)
+import Yoga.Postgres (Query(Query), Client, ClientConfig, queryValue_, queryValue, mkPool, withClient)
 import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult)
-import Tunebank.Config (testClientConfig)
 import Tunebank.Database.User (deleteUser)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Database.Comment (getComments, deleteComments)
@@ -72,8 +71,20 @@ removeCommentsFrom title =
     deleteComments (Genre "scandi") title
 
 
--- | query the test database
+-- | query the test database using the default test user and database configuration
 withDBConnection :: forall a. (Client -> Aff a) -> Aff a
 withDBConnection execution = do
   pool <- liftEffect $ mkPool $ connectionInfo testClientConfig
   withClient pool execution
+
+  where 
+
+  testClientConfig :: ClientConfig
+  testClientConfig =
+    { host: "localhost"
+    , database: "tunedbtest"
+    , port: 5432
+    , user: "test_database_user"
+    , password: "changeit"
+    , ssl: false
+    }

@@ -5,7 +5,7 @@ module Tunebank.Config
   , SecurityConfig
   , TunebankConfig
   , loadConfig
-  , testClientConfig)
+  )
   
   where
 
@@ -75,14 +75,3 @@ loadConfig = do
   _ <- liftEffect $ logShow ("reading config from " <> fullPath)
   text <- readTextFile UTF8 fullPath
   liftEffect $ decodeYamlConfig text
-
--- | temporary - the Postgres client config just used for testing
-testClientConfig :: Postgres.ClientConfig
-testClientConfig =
-  { host: "localhost"
-  , database: "tunedbtest"
-  , port: 5432
-  , user: "tunebank_api"
-  , password: "Brudmarsch"
-  , ssl: false
-  }

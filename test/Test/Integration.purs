@@ -70,7 +70,7 @@ getHome =
     awaitStarted 8080
     response <- get 8080 Object.empty "/"
     -- liftEffect $ close $ pure unit
-    response ?= "tunebank 0.0.1 Joe"
+    response ?= "tunebank 0.0.1"
 
 getGenres :: Test
 getGenres =

@@ -1,6 +1,7 @@
 
 
-conf/
+conf/tunebank.yaml
+installation/SQL/dbroles.sql
 node_modules/
 .pulp-cache/
 output/

@@ -22,9 +22,13 @@ The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/ma
 
 ## Populating the Test Database 
 
-The postgres SQL scripts that initialise the test database include the DDL statements and scripts that populate the genres, rhythms, roles and user tables with essential static data.  These are to be found in the `installation/SQL` directory.
+The postgres SQL scripts that initialise the test database include the DDL statements and scripts that populate the genres, rhythms, roles and user tables with essential static data.  These are to be found in the `installation/SQL` directory. These scripts include a file named `dbroles-test.sql` which defines a user name of `test_database_user` with a password of `changeit`. This username is used by the test framework when accessing the database.  
 
 In addition, the `installation/abc-samples` directory contains a set of Scandi tunes in ABC format.  These are reloaded automatically by the test framework at each invocation.
+
+## Configuration
+
+Configuration is by means of a file `tunebank.conf` in the `conf` directory.  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above.  It should be renamed to `tunebank.conf` before testing.
 
 ## Building 
 
@@ -32,6 +36,17 @@ spago build
 
 ## Testing
 
-  * Run the SQL scripts
+  * Install Postgres using your own superuser name and create a database named `tunedbtest`.
+  * Copy `prototype-tunebank.conf` to `tunebank.conf`.
+  * Run the SQL scripts in alphabetical order.
   * Run up the `tunebank-node` server using `spago run` (required for the integration tests).
-  * Run the tests - `spago test`
+  * Run the tests - `spago test`.
+
+### Security - Testing
+
+To do
+
+### Security - Production
+
+Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a production version of `dbroles-test.sql` with a production user name and password and provide a production version of `tunebank.conf` which uses these production names and passwords.
+
