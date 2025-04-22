@@ -13,25 +13,8 @@ import Node.FS.Aff (readdir, readTextFile)
 import Node.Encoding (Encoding(..))
 import Node.Path (FilePath, concat, normalize)
 import Tunebank.Logic.Api (upsertValidatedTune)
-import Yoga.Postgres (Client, mkPool, withClient)
+import Yoga.Postgres (Client)
 import Tunebank.Types (Genre, UserName(..), Role(..))
-import Tunebank.Environment (connectionInfo)
-
-{-}
-uploadTunes :: Genre -> FilePath -> Aff Unit
-uploadTunes genre dirPath = do
-  _ <- liftEffect $ logShow ("importing from " <> dirPath)
-  files <- readdir $ normalize dirPath
-  let 
-    message = "found " <> (show $ length files) <> " files"
-  _ <- liftEffect $ log message
-
-  pool <- liftEffect $ mkPool connectionInfo
-  withClient pool $ \c -> do
-    _ <- traverse (uploadFile c >>> logResult) files
-    pure unit
-  pure unit
--}
 
 uploadTunes :: Genre -> FilePath -> Client -> Aff Unit
 uploadTunes genre dirPath c = do
