@@ -26,7 +26,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Either (note)
-import Data.Argonaut ((:=), (~>), jsonEmptyObject)
 import Data.Argonaut.Encode.Class (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson, decodeJson)
 import Data.Argonaut.Decode.Error (JsonDecodeError(..))
@@ -192,6 +191,7 @@ type Comment =
   , id  :: Int
   , timestamp :: Int
   }
+
 
 
 

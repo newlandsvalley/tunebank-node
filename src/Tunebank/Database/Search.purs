@@ -69,8 +69,8 @@ buildTermString searchTerm =
     else
       "'" <> target <> "'"
 
-buildExpressionString :: SearchExpression -> String 
-buildExpressionString = 
+buildSearchExpressionString :: SearchExpression -> String 
+buildSearchExpressionString = 
   map buildTermString >>> fold
 
 normaliseKeySignature :: String -> String

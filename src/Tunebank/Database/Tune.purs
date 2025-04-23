@@ -11,8 +11,9 @@ import Yoga.Postgres (Query(Query), Client, query_, queryOne, queryValue, queryV
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Logic.AbcMetadata (ValidatedAbc)
+import Tunebank.Pagination (PaginationExpression, buildPaginationExpressionString)
 import Tunebank.Types (Authorization, UserName(..), Title, TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
-import Tunebank.Database.Search (SearchExpression, buildExpressionString)
+import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult, read', singleIntResult)
 
@@ -102,18 +103,19 @@ countSelectedTunes :: Genre -> SearchExpression -> Client -> Aff Int
 countSelectedTunes genre searchExpression c = do 
   let 
     query = "select count(*) from tunes where genre = '" <> (show genre) <> "'" 
-            <> buildExpressionString searchExpression
+            <> buildSearchExpressionString searchExpression
   _ <- liftEffect $ log ("query: " <> query)
   _ <- liftEffect $ logShow ("trying to count selected tunes")
   matchCount <- queryValue_ singleIntResult (Query query :: Query Int) c
   pure $ maybe 0 identity matchCount
 
-getTuneRefs :: Genre -> SearchExpression ->  Client -> Aff (Array TuneRef)
-getTuneRefs genre searchExpression c = do
+getTuneRefs :: Genre -> SearchExpression ->  PaginationExpression -> Client -> Aff (Array TuneRef)
+getTuneRefs genre searchExpression paginationExpression c = do
   let 
     queryText = "select title, rhythm, floor(extract (epoch from ts))::integer as timestamp, abc " 
             <> "from tunes where genre = '" <> (show genre) <> "'" 
-            <> buildExpressionString searchExpression
+            <> buildSearchExpressionString searchExpression
+            <> buildPaginationExpressionString paginationExpression
   _ <- liftEffect $ log ("query: " <> queryText)
   _ <- liftEffect $ logShow ("trying to get tune refs for selected tunes")
   query_ read' (Query queryText :: Query TuneRef ) c

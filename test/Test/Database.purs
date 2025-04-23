@@ -14,6 +14,7 @@ import Prelude (Unit, bind, discard, map, pure, show, unit, ($), (<>))
 import Test.Spec (Spec, before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 import Tunebank.Tools.Loader (uploadTunes)
+import Tunebank.Pagination (defaultPaginationExpression)
 import Tunebank.Types (Genre(..), Rhythm(..), UserName(..), NewUser, Role(..))
 import Tunebank.Database.Comment (getComments, deleteComment, deleteComments, insertComment, updateComment)
 import Tunebank.Database.Genre (existsGenre, getGenreStrings)
@@ -148,6 +149,7 @@ tuneSpec =
       res <- withDBConnection $ getTuneRefs (Genre "scandi")  
          [ { criterion: ByRhythm, operator: Equals, target: "schottis"}
          , { criterion: ByKeySig, operator: Equals, target: "AMajor"} ]
+         defaultPaginationExpression
       length res `shouldEqual` 2
     it "finds tune metadata" do
       mMetadata <- withDBConnection $ getTuneMetadata (Genre "scandi") "elverumspols" 
@@ -242,7 +244,7 @@ searchSpec =
                       , { criterion: ByRhythm, operator: Equals, target:"polska"}
                       , { criterion: ByKeySig, operator: Equals, target:"BMinor"}
                       ]
-      buildExpressionString expression `shouldEqual` 
+      buildSearchExpressionString expression `shouldEqual` 
         " and title like '%Fastan%' and rhythm = 'polska' and keysig = 'BMinor'"
   
 
