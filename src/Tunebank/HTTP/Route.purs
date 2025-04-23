@@ -34,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression)
 import Tunebank.Database.Tune (getTuneAbc, getTuneRefs, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecord, getUserRecords, insertUnregisteredUser, registerUser)
+import Tunebank.Database.User (getUserRecord, getUserRecords, insertUnregisteredUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
@@ -59,7 +59,7 @@ data Route
   | Users
   | User UserName
   | UserCheck
-  | UserRegister String
+  | UserValidate String
   | CheckRequest
   | CatchAll (Array String)
 
@@ -100,7 +100,7 @@ route = root $ sum
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
   , "UserCheck": "user" / "check" / noArgs
-  , "UserRegister": "user" / "register" / (string segment)
+  , "UserValidate": "user" / "validate" / (string segment)
   , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comment"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
@@ -130,7 +130,7 @@ router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute headers
 router { route: User user, headers } = userRoute user headers
 router { route: UserCheck, headers } = checkUserRoute headers
-router { route: UserRegister uuid } = registerUserRoute uuid
+router { route: UserValidate uuid } = validateUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
 router { route: CatchAll paths } = routeError paths
 
@@ -338,11 +338,11 @@ insertUserRoute body = do
       either customBadRequest ok eResult
 
 
-registerUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
-registerUserRoute uuid = do 
+validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
+validateUserRoute uuid = do 
   dbpool :: Pool  <- asks _.dbpool
   _ <- liftAff $ withClient dbpool $ do
-    registerUser uuid 
+    validateUser uuid 
   ok "registered"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response

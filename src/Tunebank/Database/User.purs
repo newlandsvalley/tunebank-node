@@ -10,9 +10,8 @@ module Tunebank.Database.User
   , existsUser
   , existsRegisteredUser
   , insertUnregisteredUser
-  , registerUser
-  , changeUserPassword
   , validateUser
+  , changeUserPassword
   , validateCredentials) where
 
 import Prelude
@@ -52,8 +51,8 @@ validateCredentials credentials c = do
   mAuth <- queryOne read' (Query queryText :: Query (Maybe Authorization)) params c
   pure $ note ("Invalid credentials: " <> (show credentials.user)) (join mAuth)
 
-validateUser :: UserName -> Client -> Aff (Either String UserName)
-validateUser user c = do
+checkKnownUser :: UserName -> Client -> Aff (Either String UserName)
+checkKnownUser user c = do
   -- _ <- liftEffect $ logShow ("trying to match " <> user)
   mUser <- queryValue maybeStringResult (Query "select username from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql user ] c
   -- pure $ maybe (Left $ error ("Unknown user: " <> user)) Right (join $ mResult)
@@ -78,9 +77,9 @@ getUserRecords c = do
   _ <- liftEffect $ log "trying to get all user records "
   query_ read' (Query "select username, email, rolename as role, valid from users" :: Query UserRecord) c
 
--- | register a user by setting the valid flag
-registerUser :: String -> Client -> Aff Unit
-registerUser uuid c = do
+-- | validate a user by setting the valid flag if the hash corresponds
+validateUser :: String -> Client -> Aff Unit
+validateUser uuid c = do
   _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
   let 
     query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
@@ -116,7 +115,7 @@ insertUnregisteredUser newUser c = do
 
 assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do
-  eUser <- validateUser user c 
+  eUser <- checkKnownUser user c 
   case eUser of 
     Right (UserName username) -> do
       liftEffect $ logShow ("user: " <> username <> " is OK")

@@ -79,12 +79,12 @@ userSpec = before_ flushUsers do
       res <- withDBConnection do
         insertUnregisteredUser newUser
       res `shouldEqual` Left ("username " <> newUser.name <> " is already taken") 
-    it "registers a user" do  
+    it "validates a user" do  
       withDBConnection $ \c -> do 
         let 
           userName = "Jim"
         uuid <- getRegistrationId userName c
-        _ <- registerUser uuid c
+        _ <- validateUser uuid c
         -- registration should set user.valid to 'Y'
         mUser <- getUserRecord (UserName userName) c
         let 
