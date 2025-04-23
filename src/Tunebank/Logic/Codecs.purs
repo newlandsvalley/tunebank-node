@@ -6,6 +6,7 @@ module Tunebank.Logic.Codecs
   , encodeGenres
   , encodeRhythms
   , encodeTuneRefs 
+  , encodeTunesPage
   , encodeComments
   , encodeComment
   , encodeMessage)
@@ -14,6 +15,7 @@ module Tunebank.Logic.Codecs
 import Prelude
 
 import Tunebank.Types
+import Tunebank.Pagination (TuneRefsPage)
 
 import Data.Argonaut.Decode (JsonDecodeError, parseJson)
 import Data.Argonaut.Decode.Class (decodeJson)
@@ -36,6 +38,10 @@ encodeRhythms rhythms =
 
 encodeTuneRefs :: Array TuneRef -> Json 
 encodeTuneRefs = 
+  encodeJson
+
+encodeTunesPage :: TuneRefsPage -> Json 
+encodeTunesPage = 
   encodeJson
 
 encodeUserRecords :: Array UserRecord -> Json 

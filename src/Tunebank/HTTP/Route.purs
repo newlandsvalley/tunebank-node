@@ -39,10 +39,11 @@ import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
+import Tunebank.Logic.Api (getTuneRefsPage)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeUserRecords, encodeUserRecord)
-import Tunebank.Pagination (buildPaginationExpression, defaultPaginationExpression)
-import Tunebank.Types (Authorization, Comment, Genre, Rhythm, NewUser, UserName, TuneRef)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeTunesPage, encodeUserRecords, encodeUserRecord)
+import Tunebank.Pagination (TuneRefsPage, buildPaginationExpression, defaultPaginationExpression)
+import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName, TuneRef)
 import Tunebank.Config (PagingConfig)
 import Yoga.Postgres (Pool, withClient)
 
@@ -177,10 +178,16 @@ searchRoute genre params = do
   _ <- liftEffect $ logShow searchExpression
   _ <- liftEffect $ logShow paginationExpression 
   dbpool :: Pool  <- asks _.dbpool
+  tunesPage :: TuneRefsPage <- liftAff $ withClient dbpool $ do
+    getTuneRefsPage genre searchExpression paginationExpression paging.defaultSize
+  let
+    json = stringify $ encodeTunesPage tunesPage 
+  {-}
   tunes :: Array TuneRef <- liftAff $ withClient dbpool $ do
     getTuneRefs genre searchExpression paginationExpression
   let
     json = stringify $ encodeTuneRefs tunes
+  -}
   ok' jsonHeaders json
 
 tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response

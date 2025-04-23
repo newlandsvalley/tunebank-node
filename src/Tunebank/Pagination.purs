@@ -2,6 +2,7 @@ module Tunebank.Pagination
    ( PaginationExpression
    , PaginationResponse   
    , SortKey
+   , TuneRefsPage
    , buildPaginationExpression
    , buildPaginationExpressionString
    , defaultPaginationExpression
@@ -13,6 +14,7 @@ import Prelude
 import Data.Maybe (fromMaybe, maybe)
 import Data.String.Common (toLower)
 import Tunebank.Database.Search (SearchParams)
+import Tunebank.Types (TuneRef)
 
 -- | supported sort keys for the tunes table
 data SortKey 
@@ -25,15 +27,22 @@ instance showSortKey :: Show SortKey where
   show ByTitleKey = "order by title ASC"
   show ByDateKey = "order by ts DESC"
 
+-- | a pagination request to the database
 type PaginationExpression = 
   { sort :: SortKey 
   , limit :: Int 
   , offset :: Int 
   }
 
+-- | a pagination response to the user, associated with the result page
 type PaginationResponse = 
   { page :: Int          -- e.g. page 1
   , maxPages :: Int      -- of 10
+  }
+
+type TuneRefsPage = 
+  { tunes :: Array TuneRef 
+  , pagination :: PaginationResponse
   }
 
 defaultPaginationExpression :: PaginationExpression 
