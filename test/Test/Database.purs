@@ -60,7 +60,7 @@ userSpec = before_ flushUsers do
       res <- withDBConnection $ getUserRecord (UserName "NotAKnownUser")
       res `shouldEqual` Nothing
     it "finds all users" do
-      res <- withDBConnection $ getUserRecords 
+      res <- withDBConnection $ getUserRecords defaultPaginationExpression
       length res `shouldEqual` 4
     it "inserts a new (as yet unregistered) user" do
       let 

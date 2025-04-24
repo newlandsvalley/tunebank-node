@@ -123,7 +123,7 @@ getUsers =
     awaitStarted 8080
     response <- get 8080 adminAuthHeaders "/user"
     response `shouldSatisfy` contains (Pattern "john.watson@gmx.co.uk")
-    response `shouldStartWith` """[{"valid":"""
+    response `shouldStartWith` """{"users":[{"valid":"""
 
 getUsersForbidden :: Test
 getUsersForbidden =

@@ -9,12 +9,11 @@ import Prelude hiding ((/))
 
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Argonaut (printJsonDecodeError, stringify)
-import Data.Argonaut.Decode (JsonDecodeError)
 import Data.Array (intercalate)
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
@@ -32,18 +31,19 @@ import Routing.Duplex.Generic.Syntax ((/), (?))
 import Tunebank.Database.Comment (deleteComment, deleteComments, getComments, getComment, insertComment, updateComment)
 import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
-import Tunebank.Database.Search (SearchParams, buildSearchExpression)
-import Tunebank.Database.Tune (getTuneAbc, getTuneRefs, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecord, getUserRecords, insertUnregisteredUser, validateUser)
+import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
+import Tunebank.Database.Tune (getTuneAbc, deleteTune, upsertTune)
+import Tunebank.Database.User (getUserRecord, insertUnregisteredUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
-import Tunebank.Logic.Api (getTuneRefsPage)
+import Tunebank.Logic.Api (getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneRefs, encodeTunesPage, encodeUserRecords, encodeUserRecord)
-import Tunebank.Pagination (TuneRefsPage, buildPaginationExpression, defaultPaginationExpression)
-import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName, TuneRef)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms,
+        encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
+import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName)
 import Tunebank.Config (PagingConfig)
 import Yoga.Postgres (Pool, withClient)
 
@@ -58,6 +58,7 @@ data Route
   | Comment Int
   | Users
   | User UserName
+  | UserSearch PagingParams
   | UserCheck
   | UserValidate String
   | CheckRequest
@@ -99,6 +100,10 @@ route = root $ sum
        }
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
+  , "UserSearch": "search" ? 
+       { page : optional <<< int
+       , sort : optional <<< string
+       }
   , "UserCheck": "user" / "check" / noArgs
   , "UserValidate": "user" / "validate" / (string segment)
   , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comment"
@@ -127,9 +132,10 @@ router { route: Comment id, method: Delete, headers } = deleteCommentRoute id he
 router { route: Comment id, method: Post, headers, body } = updateCommentRoute id body headers 
 router { route: Comment id} = commentRoute id
 router { route: Users, method: Post, body} = insertUserRoute body
-router { route: Users, headers } = usersRoute headers
+router { route: Users, headers } = usersRoute defaultUserPagingParams headers
 router { route: User user, headers } = userRoute user headers
 router { route: UserCheck, headers } = checkUserRoute headers
+router { route: UserSearch params, headers } = usersRoute params headers
 router { route: UserValidate uuid } = validateUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
 router { route: CatchAll paths } = routeError paths
@@ -158,15 +164,19 @@ rhythmRoute genre = do
     json = stringify $ encodeRhythms rhythms
   ok' jsonHeaders json
 
-
 tunesRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> m Response
-tunesRoute genre = do 
+tunesRoute genre = 
+  searchRoute genre defaultSearchParams
+
+
+{-}
   dbpool :: Pool  <- asks _.dbpool
   tunes :: Array TuneRef <- liftAff $ withClient dbpool $ do
     getTuneRefs genre [] defaultPaginationExpression
   let
     json = stringify $ encodeTuneRefs tunes
   ok' jsonHeaders json
+-}
 
 
 searchRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> SearchParams -> m Response
@@ -174,20 +184,13 @@ searchRoute genre params = do
   paging :: PagingConfig  <- asks _.paging
   let 
     searchExpression = buildSearchExpression params
-    paginationExpression = buildPaginationExpression params paging.defaultSize
+    paginationExpression = buildSearchPaginationExpression params paging.defaultSize
   _ <- liftEffect $ logShow searchExpression
-  _ <- liftEffect $ logShow paginationExpression 
   dbpool :: Pool  <- asks _.dbpool
   tunesPage :: TuneRefsPage <- liftAff $ withClient dbpool $ do
     getTuneRefsPage genre searchExpression paginationExpression paging.defaultSize
   let
     json = stringify $ encodeTunesPage tunesPage 
-  {-}
-  tunes :: Array TuneRef <- liftAff $ withClient dbpool $ do
-    getTuneRefs genre searchExpression paginationExpression
-  let
-    json = stringify $ encodeTuneRefs tunes
-  -}
   ok' jsonHeaders json
 
 tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
@@ -296,15 +299,18 @@ updateCommentRoute id body headers = do
           eResult <- updateComment id updatedComment auth c
           either customForbidden (const $ ok "") eResult
 
-usersRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
-usersRoute headers = do 
+usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
+usersRoute pagingParams headers = do 
+  paging :: PagingConfig  <- asks _.paging
+  let 
+    paginationExpression = buildPaginationExpression pagingParams paging.defaultSize
   dbpool :: Pool  <- asks _.dbpool
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
     withAdminAuthorization eAuth $ \_auth -> do
-      users <- getUserRecords c
+      usersPage <- getUserRecordsPage paginationExpression paging.defaultSize c
       let
-        json = stringify $ encodeUserRecords users
+        json = stringify $ encodeUserRecordsPage usersPage
       ok' jsonHeaders json
 
 checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
@@ -343,7 +349,7 @@ validateUserRoute uuid = do
   dbpool :: Pool  <- asks _.dbpool
   _ <- liftAff $ withClient dbpool $ do
     validateUser uuid 
-  ok "registered"
+  ok "validated"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 preflightOptionsRoute = do 

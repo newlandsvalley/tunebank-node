@@ -11,7 +11,7 @@ import Yoga.Postgres (Query(Query), Client, query_, queryOne, queryValue, queryV
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Logic.AbcMetadata (ValidatedAbc)
-import Tunebank.Pagination (PaginationExpression, buildPaginationExpressionString)
+import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
 import Tunebank.Types (Authorization, UserName(..), Title, TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
 import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
@@ -109,13 +109,13 @@ countSelectedTunes genre searchExpression c = do
   matchCount <- queryValue_ singleIntResult (Query query :: Query Int) c
   pure $ maybe 0 identity matchCount
 
-getTuneRefs :: Genre -> SearchExpression ->  PaginationExpression -> Client -> Aff (Array TuneRef)
+getTuneRefs :: Genre -> SearchExpression -> PaginationExpression -> Client -> Aff (Array TuneRef)
 getTuneRefs genre searchExpression paginationExpression c = do
   let 
     queryText = "select title, rhythm, floor(extract (epoch from ts))::integer as timestamp, abc " 
             <> "from tunes where genre = '" <> (show genre) <> "'" 
             <> buildSearchExpressionString searchExpression
-            <> buildPaginationExpressionString paginationExpression
+            <> buildPaginationExpressionString TunesPage paginationExpression
   _ <- liftEffect $ log ("query: " <> queryText)
   _ <- liftEffect $ logShow ("trying to get tune refs for selected tunes")
   query_ read' (Query queryText :: Query TuneRef ) c

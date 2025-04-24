@@ -1,5 +1,6 @@
 module Tunebank.Logic.Api 
    ( getTuneRefsPage
+   , getUserRecordsPage
    , upsertValidatedTune) where
 
 import Prelude
@@ -8,10 +9,11 @@ import Data.Either (Either(..))
 import Effect.Aff (Aff)
 import Yoga.Postgres (Client)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneRefs, upsertTune)
+import Tunebank.Database.User (getUserRecords, getUserCount)
 import Tunebank.Database.Search (SearchExpression)
 import Tunebank.Types (Authorization, Genre)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage)
+import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
 
 
 -- | upsert a tune - insert or update the database as appropriate
@@ -34,6 +36,25 @@ getTuneRefsPage genre searchExpression paginationExpression pageSize c = do
     pagination = paginate maxPages
 
   pure { tunes, pagination}
+
+  where
+  page :: Int 
+  page = (paginationExpression.offset / pageSize) + 1
+
+  paginate :: Int -> PaginationResponse
+  paginate maxPages = { page,  maxPages }
+
+
+-- | decorate a tune page returned from the database with its paging information
+getUserRecordsPage :: PaginationExpression -> Int -> Client -> Aff UserRecordsPage
+getUserRecordsPage paginationExpression pageSize c = do
+  users <- getUserRecords paginationExpression c
+  count <- getUserCount c
+  let 
+    maxPages = (count / pageSize ) + 1
+    pagination = paginate maxPages
+
+  pure { users, pagination}
 
   where
   page :: Int 

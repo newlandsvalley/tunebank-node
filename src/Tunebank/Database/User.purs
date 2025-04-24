@@ -22,10 +22,11 @@ import Effect.Class (liftEffect)
 import Effect.Aff (Aff, Error, error)
 import Effect.Exception (throw, throwException)
 import Data.Maybe (Maybe(..), maybe)
-import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValue)
+import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValue, queryValue_)
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
+import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
 import Tunebank.Types (Authorization, Credentials, NewUser, Email, Password, UserName(..), Role (..), UserRecord)
 
 -- | return true if the user exists and is registered
@@ -72,10 +73,13 @@ getUserRecord (UserName user) c = do
   queryOne read' (Query "select username, email, rolename as role, valid from users where username = $1" :: Query UserRecord) [ toSql user ] c
 
 
-getUserRecords :: Client -> Aff (Array UserRecord)
-getUserRecords c = do
+getUserRecords :: PaginationExpression -> Client -> Aff (Array UserRecord)
+getUserRecords paginationExpression c = do
+  let 
+    queryText = "select username, email, rolename as role, valid from users" 
+                <> buildPaginationExpressionString UsersPage paginationExpression
   _ <- liftEffect $ log "trying to get all user records "
-  query_ read' (Query "select username, email, rolename as role, valid from users" :: Query UserRecord) c
+  query_ read' (Query queryText :: Query UserRecord) c
 
 -- | validate a user by setting the valid flag if the hash corresponds
 validateUser :: String -> Client -> Aff Unit
@@ -132,36 +136,10 @@ assertIsAdministrator user c = do
     _ -> 
       liftEffect $ throw ("user " <> (show user) <> " has insufficient authority")
 
-{-
-isAdministrator :: UserName -> Client -> Aff Boolean
-isAdministrator user c = do
-  mRole <- getUserRole user c 
-  let 
-    result = maybe false (_ == (Role "administrator")) mRole
-  pure result
-
-withAdminAuth :: forall a. UserName -> Client -> (UserName -> Aff (Either Error a)) -> Aff (Either Error a)
-withAdminAuth user c p = do
-  isAdmin <- isAdministrator user c
-  if isAdmin then 
-    p user
-  else do
-    pure $ Left $ error ("No admin authority for user " <> (show user))
-  
-withNormalUserAuth :: forall a. UserName -> Client -> (UserName -> Aff (Either Error a)) -> Aff (Either Error a)
-withNormalUserAuth user c p = do
-  isUser <- existsUser user c
-  if isUser then 
-    p user
-  else do
-    pure $ Left $ error ("No such user " <> (show user))
--}
-
-
-getUserCount :: String -> Client -> Aff Int
-getUserCount userName c = do
-  _ <- liftEffect $ logShow ("trying to count users of name " <> userName)
-  matchCount <- queryValue singleIntResult (Query "select count(*) from users where username = $1 and valid = 'Y'" :: Query Int) [ toSql userName ] c
+getUserCount :: Client -> Aff Int
+getUserCount c = do
+  _ <- liftEffect $ logShow ("trying to count total number of users")
+  matchCount <- queryValue_ singleIntResult (Query "select count(*) from users" :: Query Int) c
   pure $ maybe 0 identity matchCount
 
 
