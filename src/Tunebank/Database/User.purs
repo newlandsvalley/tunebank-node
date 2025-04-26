@@ -8,8 +8,8 @@ module Tunebank.Database.User
   , getUserRecords
   , getUserRole
   , existsUser
-  , existsRegisteredUser
-  , insertUnregisteredUser
+  , existsValidatedUser
+  , insertUnvalidatedUser
   , validateUser
   , changeUserPassword
   , validateCredentials) where
@@ -19,7 +19,7 @@ import Prelude
 import Data.Either (Either(..), note)
 import Effect.Console (log, logShow)
 import Effect.Class (liftEffect)
-import Effect.Aff (Aff, Error, error)
+import Effect.Aff (Aff, error)
 import Effect.Exception (throw, throwException)
 import Data.Maybe (Maybe(..), maybe)
 import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValue, queryValue_)
@@ -29,14 +29,14 @@ import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
 import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
 import Tunebank.Types (Authorization, Credentials, NewUser, Email, Password, UserName(..), Role (..), UserRecord)
 
--- | return true if the user exists and is registered
-existsRegisteredUser :: UserName -> Client -> Aff Boolean
-existsRegisteredUser userName c = do
+-- | return true if the user exists and is validated
+existsValidatedUser :: UserName -> Client -> Aff Boolean
+existsValidatedUser userName c = do
   -- _ <- liftEffect $ logShow ("trying to match " <> userName)
   matchCount <- queryValue singleIntResult (Query "select count(*) from users where username = $1 and valid = 'Y'" :: Query Int) [ toSql userName ] c
   pure $ maybe false ((_ > 0)) matchCount
 
--- | return true if the user exists (irrespective of her registration)
+-- | return true if the user exists (irrespective of her validation)
 existsUser :: UserName -> Client -> Aff Boolean
 existsUser userName c = do
   -- _ <- liftEffect $ logShow ("trying to match " <> userName)
@@ -70,13 +70,18 @@ getUserRole user c = do
 getUserRecord :: UserName -> Client -> Aff (Maybe UserRecord)
 getUserRecord (UserName user) c = do
   _ <- liftEffect $ logShow ("trying to get user record for " <> user)
-  queryOne read' (Query "select username, email, rolename as role, valid from users where username = $1" :: Query UserRecord) [ toSql user ] c
+  let 
+    query = 
+      "select username, email, rolename as role, valid, floor(extract (epoch from ts))::integer as timestamp" 
+      <> " from users where username = $1"
+  queryOne read' (Query query :: Query UserRecord) [ toSql user ] c
 
 
 getUserRecords :: PaginationExpression -> Client -> Aff (Array UserRecord)
 getUserRecords paginationExpression c = do
   let 
-    queryText = "select username, email, rolename as role, valid from users" 
+    queryText = "select username, email, rolename as role, valid,"
+                <> " floor(extract (epoch from ts))::integer as timestamp from users " 
                 <> buildPaginationExpressionString UsersPage paginationExpression
   _ <- liftEffect $ log "trying to get all user records "
   query_ read' (Query queryText :: Query UserRecord) c
@@ -101,9 +106,9 @@ deleteUser user c = do
   -- _ <- liftEffect $ logShow ("trying to delete user " <> user)
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
--- | insert an as yet unregistered user, returning the UUID needed for the eventual registration
-insertUnregisteredUser :: NewUser -> Client -> Aff (Either String String)
-insertUnregisteredUser newUser c = do
+-- | insert an as yet unvalidated user, returning the UUID needed for the eventual validation
+insertUnvalidatedUser :: NewUser -> Client -> Aff (Either String String)
+insertUnvalidatedUser newUser c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
   if (userAlreadyExists) then do
     _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")

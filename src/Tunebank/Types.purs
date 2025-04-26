@@ -156,6 +156,7 @@ type UserRecord =
   , email :: Email
   , role :: Role
   , valid :: String
+  , timestamp :: Int
   }
 
 type TuneRef =

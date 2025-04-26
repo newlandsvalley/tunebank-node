@@ -8,7 +8,7 @@ import Data.Either (Either(..), isRight)
 import Data.Maybe (Maybe(..), isJust)
 import Data.String.CodeUnits (length) as STRING
 import Effect.Aff (Aff)
-import Effect.Console (log, logShow)
+import Effect.Console (log)
 import Effect.Class (liftEffect)
 import Prelude (Unit, bind, discard, map, pure, show, unit, ($), (<>))
 import Test.Spec (Spec, before_, describe, it)
@@ -52,10 +52,8 @@ userSpec = before_ flushUsers do
       res `shouldEqual` false
     it "finds an existing user record" do
       res <- withDBConnection $ getUserRecord (UserName "John")
-      res `shouldEqual` Just { username: (UserName "John")
-                             , email: "john.watson@gmx.co.uk" 
-                             , role: (Role "normaluser")
-                             , valid: "Y" }
+      map (_.username) res `shouldEqual` Just (UserName "John")
+      map (_.role) res `shouldEqual` Just (Role "normaluser")
     it "finds Nothing for a user record if the user doesn't exist" do
       res <- withDBConnection $ getUserRecord (UserName "NotAKnownUser")
       res `shouldEqual` Nothing
@@ -68,7 +66,7 @@ userSpec = before_ flushUsers do
         newUser = { name: "NewUser", password: "changeit", email: "newuser@google.com" }
       -- this should return Right (UUID String) of 36 characters
       res <- withDBConnection do
-        insertUnregisteredUser newUser
+        insertUnvalidatedUser newUser
       let 
         lengthRes = rmap STRING.length res      
       lengthRes `shouldEqual` (Right 36)
@@ -77,7 +75,7 @@ userSpec = before_ flushUsers do
         newUser :: NewUser
         newUser = { name: "John", password: "changeit", email: "john@google.com" }     
       res <- withDBConnection do
-        insertUnregisteredUser newUser
+        insertUnvalidatedUser newUser
       res `shouldEqual` Left ("username " <> newUser.name <> " is already taken") 
     it "validates a user" do  
       withDBConnection $ \c -> do 
@@ -141,10 +139,6 @@ tuneSpec =
     it "counts all scandi tunes by Bruun" do
       res <- withDBConnection $ countSelectedTunes (Genre "scandi")  [{ criterion: ByTitle, operator: Like, target: "bruun"}]
       (show res) `shouldEqual` "2"
-    {-
-    it "tests integer equality" do
-      (pure $ 1 + 1)  `shouldReturn` 2
-    -}
     it "returns references to any schottis in AMajor" do
       res <- withDBConnection $ getTuneRefs (Genre "scandi")  
          [ { criterion: ByRhythm, operator: Equals, target: "schottis"}
@@ -280,7 +274,7 @@ deleteAllComments c = do
   execute_ (Query "delete from comments ") c
 -}
 
--- if we use this, then it tests the database API then just a blanket delete
+-- if we use this, then it tests the database API rather than just a blanket delete
 deleteAllComments :: Client -> Aff Unit 
 deleteAllComments c = do
   -- _ <- liftEffect $ log "DELETING COMMENTS FROM griffenfeldt, elverumspols and getingen"

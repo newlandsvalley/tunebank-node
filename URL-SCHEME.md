@@ -34,9 +34,11 @@ Only the original submitter of the tune or a user wth `Administrator` privileges
 #### Users
 
 *  GET / _user_  - get a paged list of users 
-*  GET / _user_  / _register_ / **uuid** - register a user
-*  POST / _user_  - add a new (as yet not fully regsistered) user
+*  POST / _user_  - add a new (as yet not fully validated) user
+*  GET / _user_  / _validate_ / **uuid** - validate a user by checking the uuid returned to us
 *  GET / _user_ / **username** - get the details of a given user
+*  GET / _user_ / check - check that the user in the Auth header is known to us
+*  GET / _user_ / search - get a paged list of users 
 
 Only an user with Administrator` privileges is allowed to access user records
 

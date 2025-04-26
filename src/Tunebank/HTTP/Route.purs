@@ -33,7 +33,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecord, insertUnregisteredUser, validateUser)
+import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
@@ -131,6 +131,7 @@ router { route: Comment _id, method: Options } = preflightOptionsRoute
 router { route: Comment id, method: Delete, headers } = deleteCommentRoute id headers
 router { route: Comment id, method: Post, headers, body } = updateCommentRoute id body headers 
 router { route: Comment id} = commentRoute id
+router { route: Users, method: Options } = preflightOptionsRoute
 router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute defaultUserPagingParams headers
 router { route: User user, headers } = userRoute user headers
@@ -168,17 +169,6 @@ tunesRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> m Response
 tunesRoute genre = 
   searchRoute genre defaultSearchParams
 
-
-{-}
-  dbpool :: Pool  <- asks _.dbpool
-  tunes :: Array TuneRef <- liftAff $ withClient dbpool $ do
-    getTuneRefs genre [] defaultPaginationExpression
-  let
-    json = stringify $ encodeTuneRefs tunes
-  ok' jsonHeaders json
--}
-
-
 searchRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> SearchParams -> m Response
 searchRoute genre params = do 
   paging :: PagingConfig  <- asks _.paging
@@ -208,7 +198,6 @@ deleteTuneRoute genre title headers = do
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteTune genre title auth.user c
       either customForbidden (const $ ok "") eResult
-
 
 upsertTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> RequestHeaders -> RequestBody -> m Response
 upsertTuneRoute genre headers body = do 
@@ -340,7 +329,7 @@ insertUserRoute body = do
     Right newUser -> do 
       dbpool :: Pool  <- asks _.dbpool
       eResult <- liftAff $ withClient dbpool $ do
-        insertUnregisteredUser newUser
+        insertUnvalidatedUser newUser
       either customBadRequest ok eResult
 
 

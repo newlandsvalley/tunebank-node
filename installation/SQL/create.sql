@@ -8,7 +8,8 @@ CREATE TABLE users (
     passwd varchar(50),
     email varchar(50),
     valid char (1),
-    registrationid uuid DEFAULT gen_random_uuid(),
+    registrationid uuid default gen_random_uuid(),
+    ts timestamp default current_timestamp,
     UNIQUE (registrationid)
 );
 

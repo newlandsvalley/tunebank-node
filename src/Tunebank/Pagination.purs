@@ -44,7 +44,7 @@ interpretSortKey page k =
     UsersPage -> 
       case k of 
         ByAlphaKey -> "order by username ASC"
-        ByDateKey -> "order by username ASC"  -- TO DO - we'll need to add a timestamp field
+        ByDateKey -> "order by ts DESC"  
 
 -- | a pagination request to the database
 type PaginationExpression = 
@@ -86,6 +86,7 @@ defaultUserPagingParams :: PagingParams
 defaultUserPagingParams = 
   { page : Just 1, sort: Just "alpha"}
 
+-- | build a pagination expression from the search params in place for tune search
 buildSearchPaginationExpression :: SearchParams -> Int -> PaginationExpression
 buildSearchPaginationExpression searchParams limit = 
   let 
