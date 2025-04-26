@@ -16,6 +16,7 @@ import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Utils (singleIntResult, maybeStringResult, read')
 import Tunebank.Types (Genre(..), GenreRecord)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 existsGenre :: Genre -> Client -> Aff Boolean
 existsGenre genre c = do
@@ -23,11 +24,11 @@ existsGenre genre c = do
   matchCount <- queryValue singleIntResult (Query "select count(*) from genres where genre = $1" :: Query Int) [ toSql genre ] c
   pure $ maybe false ((_ > 0)) matchCount
 
-validateGenre :: Genre -> Client -> Aff (Either String Genre)
+validateGenre :: Genre -> Client -> Aff (Either ResponseError Genre)
 validateGenre genre c = do
   _ <- liftEffect $ logShow ("trying to match " <> (show genre))
   mGenre <- queryValue maybeStringResult (Query "select genre from genres where genre = $1" :: Query (Maybe String)) [ toSql genre ] c
-  pure $ map Genre $ note ("Unknown genre: " <> (show genre)) $ join mGenre
+  pure $ map Genre $ note (BadRequest $ "Unknown genre: " <> (show genre)) $ join mGenre
 
 -- get the array of all Genre records
 getGenreRecords :: Client -> Aff (Array GenreRecord)

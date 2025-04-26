@@ -22,6 +22,7 @@ import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
 import Tunebank.Database.Search
 import Tunebank.Database.User
+import Tunebank.HTTP.Response (ResponseError(..))
 import Yoga.Postgres (Client, Query(Query), execute_)
 import Test.Utils (getInitialCommentId, getRegistrationId, withDBConnection)
 
@@ -76,7 +77,7 @@ userSpec = before_ flushUsers do
         newUser = { name: "John", password: "changeit", email: "john@google.com" }     
       res <- withDBConnection do
         insertUnvalidatedUser newUser
-      res `shouldEqual` Left ("username " <> newUser.name <> " is already taken") 
+      res `shouldEqual` Left (BadRequest ("username " <> newUser.name <> " is already taken"))
     it "validates a user" do  
       withDBConnection $ \c -> do 
         let 
@@ -179,7 +180,7 @@ commentSpec =
       -- res `shouldSatisfy` isRight
       case res of 
         Left err -> 
-          fail err 
+          fail $ show err 
         Right comments ->
           (length comments) `shouldEqual` 2
     it "updates a comment" do
@@ -206,7 +207,7 @@ commentSpec =
                  , role : (Role "normaluser")
                  }
         updateComment commentId updatedComment auth c
-      res `shouldEqual` Left "Only the original comment submitter or an administrator can update a comment"
+      res `shouldEqual` Left (Forbidden "Only the original comment submitter or an administrator can update a comment")
       
     it "bars a comment delete from an unauthorised user" do
     
@@ -214,17 +215,17 @@ commentSpec =
         commentId <- getInitialCommentId c
         deleteComment commentId ( { user: (UserName "Bert"), role: (Role "normaluser") }) c 
 
-      res `shouldEqual` Left "Only the original comment submitter or an administrator can delete a comment"    
+      res `shouldEqual` Left (Forbidden "Only the original comment submitter or an administrator can delete a comment")
     it "allows a comment delete from the original submitter" do
       withDBConnection $ \c -> do
         commentId <- getInitialCommentId c 
         eRes <- deleteComment commentId ( { user: (UserName "John"), role: (Role "normaluser") }) c
         case eRes of 
-          Left err -> fail err
+          Left err -> fail $ show err
           Right _ -> do
             eComments <- getComments (Genre "scandi") "griffenfeldt" c
             case eComments of 
-              Left err1 -> fail err1
+              Left err1 -> fail $ show err1
               Right comments -> 
                 length comments `shouldEqual` 1
       

@@ -15,6 +15,7 @@ import Node.Path (FilePath, concat, normalize)
 import Tunebank.Logic.Api (upsertValidatedTune)
 import Yoga.Postgres (Client)
 import Tunebank.Types (Genre, UserName(..), Role(..))
+import Tunebank.HTTP.Response (ResponseError)
 
 uploadTunes :: Genre -> FilePath -> Client -> Aff Unit
 uploadTunes genre dirPath c = do
@@ -28,7 +29,7 @@ uploadTunes genre dirPath c = do
   pure unit
 
   where 
-  uploadFile :: FilePath -> Aff (Either String String)
+  uploadFile :: FilePath -> Aff (Either ResponseError String)
   uploadFile filePath = do 
     let 
       fullPath = concat [dirPath, filePath]
@@ -36,7 +37,7 @@ uploadTunes genre dirPath c = do
     text <- readTextFile UTF8 fullPath
     upsertValidatedTune ( { user: (UserName "John"), role: (Role "normaluser") }) c genre text
 
-  logResult :: forall a. Show a => Aff (Either String a) -> Aff Unit 
+  logResult :: forall a. Show a => Aff (Either ResponseError a) -> Aff Unit 
   logResult aff = do
     eResult <- aff  
     _ <- liftEffect $ either logShow logShow eResult

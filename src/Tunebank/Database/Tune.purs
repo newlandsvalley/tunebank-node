@@ -16,6 +16,7 @@ import Tunebank.Types (Authorization, UserName(..), Title, TuneMetadata, TuneRef
 import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult, read', singleIntResult)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 insertTune :: Genre -> UserName -> ValidatedAbc -> Client -> Aff String
 insertTune genre user vAbc c = do
@@ -62,7 +63,7 @@ getTuneId genre title c = do
   pure $ join mId
 
 
-upsertTune :: Genre -> Authorization -> ValidatedAbc -> Client -> Aff (Either String String)
+upsertTune :: Genre -> Authorization -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
 upsertTune genre auth vAbc c = do
   -- userRole <- getUserRole user c
   mOwner <- getTuneOwner genre vAbc.title c
@@ -72,7 +73,7 @@ upsertTune genre auth vAbc c = do
         title <- updateTune genre vAbc c
         pure $ Right (title <> " updated")
       else 
-        pure $ Left "Only the original tune submitter or an administrator can update a tune"
+        pure $ Left $ Forbidden "Only the original tune submitter or an administrator can update a tune"
     _ -> do
       title <- insertTune genre auth.user vAbc c
       pure $ Right (title <> " inserted")
@@ -80,7 +81,7 @@ upsertTune genre auth vAbc c = do
   pure result
 
 
-deleteTune :: Genre -> Title -> UserName -> Client -> Aff (Either String Unit)
+deleteTune :: Genre -> Title -> UserName -> Client -> Aff (Either ResponseError Unit)
 deleteTune genre title user c = do
   _ <- liftEffect $ logShow ("trying to delete tune " <> title)
   mOwner <- getTuneOwner genre title c
@@ -94,9 +95,9 @@ deleteTune genre title user c = do
            [ toSql genre, toSql title ] c
         pure $ Right unit
       else 
-        pure $ Left "Only the original tune submitter or an administrator can delete a tune"
+        pure $ Left $ Forbidden "Only the original tune submitter or an administrator can delete a tune"
     Nothing -> 
-      pure $ Left ("tune: " <> title <> " not found")
+      pure $ Left $ BadRequest ("tune: " <> title <> " not found")
 
 
 countSelectedTunes :: Genre -> SearchExpression -> Client -> Aff Int 

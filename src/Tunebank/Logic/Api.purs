@@ -7,7 +7,6 @@ module Tunebank.Logic.Api
 import Prelude
 import Data.Abc.Midi (toMidi)
 import Data.Abc.Parser (parse)
-import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
 import Data.List (toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -21,17 +20,18 @@ import Tunebank.Database.Search (SearchExpression)
 import Tunebank.Types (Authorization, Genre, Title)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 
 -- | upsert a tune - insert or update the database as appropriate
-upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Aff (Either String String)
+upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Aff (Either ResponseError String)
 upsertValidatedTune auth c genre tuneString =    
   -- make sure the tune is terminated before we parse it
   case (buildMetadata (tuneString <> "\n")) of 
     Right abcMetadata -> do
       upsertTune genre auth abcMetadata c          
-    eErr -> do
-      pure $ rmap (const "") eErr
+    Left err -> do
+      pure $ Left $ BadRequest err
 
 -- | decorate a tune page returned from the database with its paging information
 getTuneRefsPage :: Genre -> SearchExpression ->  PaginationExpression -> Int -> Client -> Aff TuneRefsPage
@@ -70,16 +70,16 @@ getUserRecordsPage paginationExpression pageSize c = do
   paginate :: Int -> PaginationResponse
   paginate maxPages = { page,  maxPages }
 
-getTuneMidi :: Genre -> Title -> Client -> Aff (Either String Buffer)
+getTuneMidi :: Genre -> Title -> Client -> Aff (Either ResponseError Buffer)
 getTuneMidi genre title c = do
   mAbc :: Maybe String <- getTuneAbc genre title c
   case mAbc of 
     Nothing -> 
-      pure $ Left $ "not found - tune: " <> title
+      pure $ Left $ BadRequest $ "not found - tune: " <> title
     Just abcString -> 
       case (parse abcString) of 
         Left { error, pos } -> 
-          pure $ Left $ "Invalid ABC: " <> error <> " at position " <> show pos
+          pure $ Left $ InternalServerError $ "Invalid ABC: " <> error <> " at position " <> show pos
         Right tune -> do
           let 
             intArray = (toUnfoldable <<< toMidi) tune

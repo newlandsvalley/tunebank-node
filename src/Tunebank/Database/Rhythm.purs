@@ -16,6 +16,7 @@ import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Utils (singleIntResult, maybeStringResult, read')
 import Tunebank.Types (Genre, Rhythm(..), RhythmRecord)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 existsRhythm :: Genre -> Rhythm -> Client -> Aff Boolean
 existsRhythm genre rhythm c = do
@@ -24,12 +25,12 @@ existsRhythm genre rhythm c = do
      [ toSql genre, toSql rhythm ] c
   pure $ maybe false ((_ > 0)) mCount
 
-validateRhythm :: Genre -> Rhythm -> Client -> Aff (Either String Rhythm)
+validateRhythm :: Genre -> Rhythm -> Client -> Aff (Either ResponseError Rhythm)
 validateRhythm genre rhythm c = do
   _ <- liftEffect $ logShow ("trying to match genre " <> (show genre) <> " and rhythm " <> (show rhythm))
   mRhythm <- queryValue maybeStringResult (Query "select rhythm from rhythms where genre = $1 and rhythm = $2" :: Query (Maybe String))
      [ toSql genre, toSql rhythm]  c  
-  pure $ map Rhythm $ note ("Unknown rhythm: " <> (show rhythm) <> " for the " <> (show genre) <> " genre") $ join mRhythm
+  pure $ map Rhythm $ note (BadRequest $ "Unknown rhythm: " <> (show rhythm) <> " for the " <> (show genre) <> " genre") $ join mRhythm
 
 -- | get all the rhythm records for a given genre
 getRhythmRecords :: Genre -> Client -> Aff (Array RhythmRecord)

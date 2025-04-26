@@ -21,14 +21,15 @@ import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Tune (getTuneId)
 import Tunebank.Types (Authorization, Title, UserName(..), Genre, Comment, NewComment, isAdministrator)
 import Tunebank.Database.Utils (maybeStringResult, read', singleIntResult)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 
-insertComment :: Genre -> Title -> NewComment -> UserName -> Client -> Aff (Either String Int)
+insertComment :: Genre -> Title -> NewComment -> UserName -> Client -> Aff (Either ResponseError Int)
 insertComment genre title comment (UserName user) c = do
   mTuneId <- getTuneId genre title c
   case mTuneId of 
     Nothing -> do 
-      pure (Left ("Tune not found: " <> title) :: Either String Int)
+      pure $ Left $ BadRequest ("Tune not found: " <> title) 
     Just tuneId -> do
       let 
         queryText = "insert into comments ( tuneid, subject, comment, submitter) " <>
@@ -36,14 +37,14 @@ insertComment genre title comment (UserName user) c = do
         params = [toSql tuneId, toSql comment.subject, toSql comment.text, toSql user] 
       -- _ <- liftEffect $ logShow ("trying to insert tune " <> vAbc.title)
       (mCommentId :: (Maybe Int))  <- queryValue singleIntResult (Query queryText :: Query Int) params c
-      pure $ maybe (Left "comment insertion seems to have failed") Right mCommentId
+      pure $ maybe (Left $ InternalServerError "comment insertion seems to have failed") Right mCommentId
 
-getComments :: Genre -> Title -> Client -> Aff (Either String (Array Comment))
+getComments :: Genre -> Title -> Client -> Aff (Either ResponseError (Array Comment))
 getComments genre title  c = do
   mTuneId <- getTuneId genre title c
   case mTuneId of 
     Nothing -> do 
-      pure (Left ("Tune not found: " <> title) :: Either String (Array Comment))
+      pure $ Left $ BadRequest ("Tune not found: " <> title) 
     Just tuneId -> do
       let 
         queryText = "select subject, comment as text, submitter, id, " <>
@@ -52,14 +53,14 @@ getComments genre title  c = do
       comments <- query read' (Query queryText :: Query Comment ) [toSql tuneId] c
       pure $ Right comments
 
-getComment :: Int -> Client -> Aff (Either String Comment)
+getComment :: Int -> Client -> Aff (Either ResponseError Comment)
 getComment commentId c = do
   let 
     queryText = "select subject, comment as text, submitter, id, " <>
                 " floor(extract (epoch from ts))::integer as timestamp " <>
                 "from comments where id = $1"
   mComment <- queryOne read' (Query queryText :: Query Comment ) [toSql commentId] c
-  pure $ note ("Comment not found: " <> (show commentId))  mComment
+  pure $ note (BadRequest $ "Comment not found: " <> (show commentId))  mComment
 
 
 getCommentOwner :: Int -> Client -> Aff (Maybe UserName)
@@ -72,7 +73,7 @@ getCommentOwner commentId c = do
   pure $ (join >>> map UserName) mOwner
 
 
-deleteComment :: Int -> Authorization -> Client -> Aff (Either String Unit)
+deleteComment :: Int -> Authorization -> Client -> Aff (Either ResponseError Unit)
 deleteComment commentId auth c = do
   _ <- liftEffect $ logShow ("trying to delete comment " <> (show commentId))
   mOwner <- getCommentOwner commentId c
@@ -83,9 +84,9 @@ deleteComment commentId auth c = do
            [ toSql commentId ] c
         pure $ Right unit
       else 
-        pure $ Left "Only the original comment submitter or an administrator can delete a comment"
+        pure $ Left $ Forbidden "Only the original comment submitter or an administrator can delete a comment"
     Nothing -> 
-      pure $ Left ("comment: " <> (show commentId) <> " not found")
+      pure $ Left $ BadRequest ("comment: " <> (show commentId) <> " not found")
 
 -- | delete all comments for a tune
 deleteComments :: Genre -> Title -> Client -> Aff Unit
@@ -96,7 +97,7 @@ deleteComments genre title  c = do
   _ <- execute (Query query) [toSql genre, toSql title] c
   pure unit
 
-updateComment :: Int -> NewComment -> Authorization -> Client -> Aff (Either String Unit)
+updateComment :: Int -> NewComment -> Authorization -> Client -> Aff (Either ResponseError Unit)
 updateComment commentId comment auth c = do
   _ <- liftEffect $ logShow ("trying to update comment " <> (show commentId))
   mOwner <- getCommentOwner commentId c
@@ -107,6 +108,6 @@ updateComment commentId comment auth c = do
            [ toSql comment.subject, toSql comment.text, toSql commentId ] c
         pure $ Right unit
       else 
-        pure $ Left "Only the original comment submitter or an administrator can update a comment"
+        pure $ Left $ Forbidden "Only the original comment submitter or an administrator can update a comment"
     Nothing -> 
-      pure $ Left ("comment: " <> (show commentId) <> " not found")
+      pure $ Left $ BadRequest ("comment: " <> (show commentId) <> " not found")

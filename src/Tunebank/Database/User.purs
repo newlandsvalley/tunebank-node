@@ -28,6 +28,7 @@ import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
 import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
 import Tunebank.Types (Authorization, Credentials, NewUser, Email, Password, UserName(..), Role (..), UserRecord)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 -- | return true if the user exists and is validated
 existsValidatedUser :: UserName -> Client -> Aff Boolean
@@ -107,12 +108,12 @@ deleteUser user c = do
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
 -- | insert an as yet unvalidated user, returning the UUID needed for the eventual validation
-insertUnvalidatedUser :: NewUser -> Client -> Aff (Either String String)
+insertUnvalidatedUser :: NewUser -> Client -> Aff (Either ResponseError String)
 insertUnvalidatedUser newUser c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
   if (userAlreadyExists) then do
     _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
-    pure $ Left ("username " <> newUser.name <> " is already taken")
+    pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
   else do
     let 
       queryText = ("insert into users (username, rolename, passwd, email, valid) " <>
@@ -120,7 +121,7 @@ insertUnvalidatedUser newUser c = do
                   " returning CAST(registrationid AS CHAR(36))")
     _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
     mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String)) [ toSql newUser.name, toSql newUser.password, toSql newUser.email ] c
-    pure $ note ("user insert failed for " <> newUser.name) (join mResult)
+    pure $ note (InternalServerError $ "user insert failed for " <> newUser.name) (join mResult)
 
 assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do

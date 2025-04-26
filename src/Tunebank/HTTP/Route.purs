@@ -37,7 +37,7 @@ import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUse
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, midiHeaders, preflightAllOrigins)
-import Tunebank.HTTP.Response (customForbidden, customBadRequest)
+import Tunebank.HTTP.Response (customForbidden, customBadRequest, customErrorResponse)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms,
@@ -198,7 +198,7 @@ tuneMidiRoute genre title = do
   dbpool :: Pool  <- asks _.dbpool
   eMidi <- liftAff $ withClient dbpool $ do
     getTuneMidi genre title
-  either customBadRequest (ok' midiHeaders) eMidi
+  either customErrorResponse (ok' midiHeaders) eMidi
 
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
@@ -208,7 +208,7 @@ deleteTuneRoute genre title headers = do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteTune genre title auth.user c
-      either customForbidden (const $ ok "") eResult
+      either customErrorResponse (const $ ok "") eResult
 
 upsertTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> RequestHeaders -> RequestBody -> m Response
 upsertTuneRoute genre headers body = do 
@@ -222,16 +222,16 @@ upsertTuneRoute genre headers body = do
           customBadRequest error
         Right validatedAbc -> do
           eResult <- upsertTune genre auth validatedAbc c
-          either customForbidden (const $ ok "") eResult
+          either customErrorResponse (const $ ok "") eResult
           
 commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
 commentsRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
-  eComments :: (Either String (Array Comment)) <- liftAff $ withClient dbpool $ do
+  eComments <- liftAff $ withClient dbpool $ do
     getComments genre title
   case eComments of 
     Left error -> 
-      customBadRequest error
+      customErrorResponse error
     Right comments -> do   
       let
         json = stringify $ encodeComments comments
@@ -249,17 +249,17 @@ addCommentRoute genre title headers body = do
       liftAff $ withClient dbpool $ \c -> do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
-          eResult :: Either String Int <- insertComment genre title newComment auth.user c
-          either customForbidden (show >>> ok) eResult
+          eResult <- insertComment genre title newComment auth.user c
+          either customErrorResponse (show >>> ok) eResult
           
 commentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> m Response
 commentRoute commentId = do 
   dbpool :: Pool  <- asks _.dbpool
-  eComment :: (Either String Comment) <- liftAff $ withClient dbpool $ do
+  eComment <- liftAff $ withClient dbpool $ do
     getComment commentId
   case eComment of 
     Left error -> 
-      customBadRequest error
+      customErrorResponse error
     Right comment -> do   
       let
         json = stringify $ encodeComment comment
@@ -272,7 +272,7 @@ deleteCommentRoute commentId headers = do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteComment commentId auth c
-      either customForbidden (const $ ok "") eResult
+      either customErrorResponse (const $ ok "") eResult
 
 deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
 deleteTuneCommentsRoute genre title headers = do 
@@ -297,7 +297,7 @@ updateCommentRoute id body headers = do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
           eResult <- updateComment id updatedComment auth c
-          either customForbidden (const $ ok "") eResult
+          either customErrorResponse (const $ ok "") eResult
 
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
 usersRoute pagingParams headers = do 
@@ -341,7 +341,7 @@ insertUserRoute body = do
       dbpool :: Pool  <- asks _.dbpool
       eResult <- liftAff $ withClient dbpool $ do
         insertUnvalidatedUser newUser
-      either customBadRequest ok eResult
+      either customErrorResponse ok eResult
 
 
 validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
