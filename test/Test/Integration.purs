@@ -35,6 +35,7 @@ getRequestsSpec =
     getGenres
     getRhythms
     getTuneAbc
+    getTuneMidi
     getComments
     getComment
     getUsers
@@ -95,6 +96,16 @@ getTuneAbc =
     response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols"
     response `shouldStartWith` "X: 1"
     response `shouldSatisfy` contains (Pattern "Elverumspols")
+
+
+getTuneMidi :: Test
+getTuneMidi =
+  it "finds tune MIDI route" do
+    awaitStarted 8080
+    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/midi"
+    response `shouldStartWith` "MTh"
+    -- response `shouldSatisfy` contains (Pattern "Elverumspols")
+
 
 getComments :: Test
 getComments =

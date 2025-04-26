@@ -36,9 +36,9 @@ import Tunebank.Database.Tune (getTuneAbc, deleteTune, upsertTune)
 import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
-import Tunebank.HTTP.Headers (abcHeaders, preflightAllOrigins)
+import Tunebank.HTTP.Headers (abcHeaders, midiHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest)
-import Tunebank.Logic.Api (getTuneRefsPage, getUserRecordsPage)
+import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms,
         encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
@@ -53,6 +53,7 @@ data Route
   | Rhythms Genre
   | Tunes Genre
   | Tune Genre String
+  | TuneMidi Genre String
   | Search Genre SearchParams
   | Comments Genre String 
   | Comment Int
@@ -87,6 +88,7 @@ route = root $ sum
   , "Rhythms": "genre" / genreSeg / "rhythm"
   , "Tunes": "genre" / genreSeg / "tune" 
   , "Tune": "genre" / genreSeg / "tune" / (string segment) 
+  , "TuneMidi": "genre" / genreSeg / "tune" / (string segment) / "midi"
   , "Search":  "genre" / genreSeg / "search" ? 
        { title : optional <<< string
        , key : optional <<< string
@@ -122,6 +124,7 @@ router { route: Tunes genre, method : Post, headers, body } = upsertTuneRoute ge
 router { route: Tunes genre } = tunesRoute genre
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
+router { route: TuneMidi genre title } = tuneMidiRoute genre title
 router { route: Search genre params } = searchRoute genre params 
 router { route: Comments _genre _title, method: Options } = preflightOptionsRoute
 router { route: Comments genre title, method: Post, headers, body } = addCommentRoute genre title headers body
@@ -189,6 +192,14 @@ tuneRoute genre title = do
   mTune <- liftAff $ withClient dbpool $ do
     getTuneAbc genre title
   maybe notFound (ok' abcHeaders) mTune
+
+tuneMidiRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneMidiRoute genre title = do 
+  dbpool :: Pool  <- asks _.dbpool
+  eMidi <- liftAff $ withClient dbpool $ do
+    getTuneMidi genre title
+  either customBadRequest (ok' midiHeaders) eMidi
+
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 

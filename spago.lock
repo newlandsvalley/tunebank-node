@@ -14,6 +14,7 @@
             "httpurple",
             "integers",
             "newtype",
+            "node-buffer",
             "node-fs",
             "node-path",
             "ordered-collections",

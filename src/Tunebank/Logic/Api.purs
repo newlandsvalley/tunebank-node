@@ -1,17 +1,24 @@
 module Tunebank.Logic.Api 
-   ( getTuneRefsPage
+   ( getTuneMidi
+   , getTuneRefsPage
    , getUserRecordsPage
    , upsertValidatedTune) where
 
 import Prelude
+import Data.Abc.Midi (toMidi)
+import Data.Abc.Parser (parse)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
+import Data.List (toUnfoldable)
+import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
+import Node.Buffer (Buffer, fromArray)
 import Yoga.Postgres (Client)
-import Tunebank.Database.Tune (countSelectedTunes, getTuneRefs, upsertTune)
+import Tunebank.Database.Tune (countSelectedTunes, getTuneAbc, getTuneRefs, upsertTune)
 import Tunebank.Database.User (getUserRecords, getUserCount)
 import Tunebank.Database.Search (SearchExpression)
-import Tunebank.Types (Authorization, Genre)
+import Tunebank.Types (Authorization, Genre, Title)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
 
@@ -62,6 +69,22 @@ getUserRecordsPage paginationExpression pageSize c = do
 
   paginate :: Int -> PaginationResponse
   paginate maxPages = { page,  maxPages }
+
+getTuneMidi :: Genre -> Title -> Client -> Aff (Either String Buffer)
+getTuneMidi genre title c = do
+  mAbc :: Maybe String <- getTuneAbc genre title c
+  case mAbc of 
+    Nothing -> 
+      pure $ Left $ "not found - tune: " <> title
+    Just abcString -> 
+      case (parse abcString) of 
+        Left { error, pos } -> 
+          pure $ Left $ "Invalid ABC: " <> error <> " at position " <> show pos
+        Right tune -> do
+          let 
+            intArray = (toUnfoldable <<< toMidi) tune
+          buffer <- liftEffect $ fromArray intArray
+          pure $ Right buffer
 
 
 

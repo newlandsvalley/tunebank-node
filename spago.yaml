@@ -11,6 +11,7 @@ package:
     - integers
     - newtype
     - node-fs
+    - node-buffer
     - node-path
     - prelude
     - string-parsers

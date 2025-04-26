@@ -1,5 +1,6 @@
 module Tunebank.HTTP.Headers 
   ( abcHeaders
+  , midiHeaders
   , corsHeadersAllOrigins 
   , corsHeadersOrigin 
   , preflightAllOrigins 
@@ -14,6 +15,10 @@ import HTTPurple.Headers (ResponseHeaders, headers)
 -- | ABC content type
 abcHeaders :: ResponseHeaders
 abcHeaders = headers { "Content-Type": "text/vnd.abc" }
+
+-- | MIDI content type
+midiHeaders :: ResponseHeaders
+midiHeaders = headers { "Content-Type": "audio/midi" }
 
 -- | Basic access request (Get etc) from any javascript HTTPRequest
 corsHeadersAllOrigins :: ResponseHeaders 
