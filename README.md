@@ -24,11 +24,11 @@ The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/ma
 
 The postgres SQL scripts that initialise the test database include the DDL statements and scripts that populate the genres, rhythms, roles and user tables with essential static data.  These are to be found in the `installation/SQL` directory. These scripts include a file named `dbroles-test.sql` which defines a user name of `test_database_user` with a password of `changeit`. This username is used by the test framework when accessing the database.  
 
-In addition, the `installation/abc-samples` directory contains a set of Scandi tunes in ABC format.  These are reloaded automatically by the test framework at each invocation.
+The `installation/abc-samples` directory contains a set of Scandi tunes in ABC format.  These are reloaded automatically by the test framework at each invocation.
 
 ## Configuration
 
-Configuration is by means of a file `tunebank.conf` in the `conf` directory.  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above.  It should be renamed to `tunebank.conf` before testing.
+Configuration is by means of `tunebank.conf` in the `conf` directory.  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
 
 ## Building 
 
@@ -41,6 +41,7 @@ spago build
   * Run the SQL scripts in alphabetical order.
   * Run up the `tunebank-node` server using `spago run` (required for the integration tests).
   * Run the tests - `spago test`.
+  * Check the server log for mail confirmation.  This should establish that a user registration message has been sent to an ethereal url which you can then inspect.
 
 ### Security - Testing
 
@@ -48,5 +49,7 @@ To do
 
 ### Security - Production
 
-Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a production version of `dbroles-test.sql` with a production user name and password and provide a production version of `tunebank.conf` which uses these production names and passwords.
+Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a production version of `dbroles-test.sql` with a production user name and password and provide a production version of `tunebank.conf` which uses these production names and passwords. In addition, you will need to use your own SMTP service.
+
+Once you have these, make your own copy of `tunebank.conf` and edit this to provide the appropriate connections to yourt database and email service.
 

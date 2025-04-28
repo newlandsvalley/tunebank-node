@@ -14,11 +14,12 @@ paging:
   defaultSize: 15
 
 mail:
-  host: smtp.gmail.com
+  host: smtp.ethereal.email
   port: 587
-  login: youraccount@gmail.com
-  password: changeit
-  fromAddress: youraccount@gmail.com
+  secure: false
+  auth: 
+    user: vicente.heaney@ethereal.email
+    pass: 9vxCBDUfQCbE124peF
 
 security:
   corsOrigins: 

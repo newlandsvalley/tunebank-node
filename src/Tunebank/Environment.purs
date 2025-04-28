@@ -2,19 +2,23 @@ module Tunebank.Environment where
 
 import Prelude
 import Effect (Effect)
-import Tunebank.Config (TunebankConfig, PagingConfig)
+import Tunebank.Config (TunebankConfig, MailConfig, PagingConfig, ServerConfig)
 import Yoga.Postgres (Pool, ClientConfig, ConnectionInfo, connectionInfoFromConfig, defaultPoolConfig, mkPool)
 
 
 -- | A type to hold the environment for our ReaderT
-type Env = { paging :: PagingConfig
+type Env = { server :: ServerConfig
+           , paging :: PagingConfig
+           , mail :: MailConfig
            , dbpool :: Pool
            }
 
 buildEnv :: TunebankConfig -> Effect Env 
 buildEnv config = do
   dbpool <- mkPool $ connectionInfo config.db
-  pure $ { paging : config.paging
+  pure $ { server : config.server
+         , paging : config.paging
+         , mail : config.mail
          , dbpool
          }
 

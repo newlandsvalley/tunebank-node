@@ -10,7 +10,7 @@ import Prelude hiding ((/))
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Argonaut (printJsonDecodeError, stringify)
 import Data.Array (intercalate)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..), either, isRight)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (maybe)
@@ -28,6 +28,7 @@ import HTTPurple.Routes (catchAll)
 import Routing.Duplex (RouteDuplex', optional, root, segment, string, int)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
+import Tunebank.Config (PagingConfig)
 import Tunebank.Database.Comment (deleteComment, deleteComments, getComments, getComment, insertComment, updateComment)
 import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
@@ -38,13 +39,12 @@ import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, midiHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest, customErrorResponse)
-import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms,
-        encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
+import Tunebank.Tools.Mail (sendRegistrationMail)
 import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName)
-import Tunebank.Config (PagingConfig)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -341,7 +341,13 @@ insertUserRoute body = do
       dbpool :: Pool  <- asks _.dbpool
       eResult <- liftAff $ withClient dbpool $ do
         insertUnvalidatedUser newUser
-      either customErrorResponse ok eResult
+      
+      case eResult of  
+        Right uuid -> do
+          _ <- sendRegistrationMail newUser.email uuid
+          ok uuid 
+        Left err -> do
+          customErrorResponse err
 
 
 validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response

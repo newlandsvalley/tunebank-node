@@ -17,6 +17,7 @@
             "node-buffer",
             "node-fs",
             "node-path",
+            "nodemailer",
             "ordered-collections",
             "prelude",
             "string-parsers",
@@ -81,6 +82,7 @@
             "node-streams",
             "node-tls",
             "node-url",
+            "nodemailer",
             "nonempty",
             "now",
             "nullable",
@@ -104,6 +106,7 @@
             "routing-duplex",
             "safe-coerce",
             "signal",
+            "simple-json",
             "st",
             "string-parsers",
             "strings",
@@ -742,6 +745,10 @@
       "httpurple": {
         "git": "https://github.com/newlandsvalley/purescript-httpurple.git",
         "ref": "c37b349b0399ab006e808db9e5865fbe890589ad"
+      },
+      "nodemailer": {
+        "git": "https://github.com/srghma/purescript-nodemailer.git",
+        "ref": "07e273a71ee3b8b4685d0015272810f5c6340d7b"
       },
       "yaml-next": {
         "git": "https://github.com/nsaunders/purescript-yaml-next.git",
@@ -1658,6 +1665,20 @@
         "tuples"
       ]
     },
+    "nodemailer": {
+      "type": "git",
+      "url": "https://github.com/srghma/purescript-nodemailer.git",
+      "rev": "07e273a71ee3b8b4685d0015272810f5c6340d7b",
+      "dependencies": [
+        "aff",
+        "console",
+        "effect",
+        "node-fs",
+        "node-streams",
+        "prelude",
+        "simple-json"
+      ]
+    },
     "nonempty": {
       "type": "registry",
       "version": "7.0.0",
@@ -2023,6 +2044,22 @@
         "foldable-traversable",
         "maybe",
         "prelude"
+      ]
+    },
+    "simple-json": {
+      "type": "registry",
+      "version": "9.0.0",
+      "integrity": "sha256-K3RJaThqsszTd+TEklzZmAdDqvIHWgXIfKqlsoykU1c=",
+      "dependencies": [
+        "arrays",
+        "exceptions",
+        "foreign",
+        "foreign-object",
+        "nullable",
+        "prelude",
+        "record",
+        "typelevel-prelude",
+        "variant"
       ]
     },
     "spec": {

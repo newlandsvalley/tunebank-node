@@ -1,6 +1,7 @@
 module Tunebank.Config 
   ( ServerConfig
   , PagingConfig
+  --, MailAuth
   , MailConfig
   , SecurityConfig
   , TunebankConfig
@@ -12,7 +13,7 @@ module Tunebank.Config
 import Prelude
 
 import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (Json, stringify)
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (JsonDecodeError)
 import Data.Argonaut.Decode.Class (decodeJson)
 import Data.Argonaut.Decode.Error (printJsonDecodeError)
@@ -27,6 +28,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
 import Node.Path (concat)
 import Yoga.Postgres (ClientConfig) as Postgres
+import NodeMailer (AuthConfig, TransportConfig) as NM
 
 type ServerConfig = 
   { host :: String 
@@ -36,13 +38,20 @@ type ServerConfig =
 type PagingConfig = 
   { defaultSize :: Int }
 
+{-}
+type MailAuth = 
+  { user :: String
+  , pass :: String 
+  }
+-}
+
 type MailConfig = 
   { host :: String 
   , port :: Int
-  , login :: String
-  , password :: String 
-  , fromAddress :: String
+  , secure :: Boolean
+  , auth :: NM.AuthConfig
   }
+
 
 type SecurityConfig = 
   { corsOrigins:: Array String }
