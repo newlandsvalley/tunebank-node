@@ -37,7 +37,7 @@ import Tunebank.Database.Tune (getTuneAbc, deleteTune, upsertTune)
 import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
-import Tunebank.HTTP.Headers (abcHeaders, midiHeaders, preflightAllOrigins)
+import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, preflightAllOrigins)
 import Tunebank.HTTP.Response (customForbidden, customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
@@ -146,7 +146,7 @@ router { route: CatchAll paths } = routeError paths
 
 homeRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 homeRoute = do 
-  ok ("tunebank 0.0.1")
+  ok' corsHeadersAllOrigins ("tunebank 0.0.1")
 
 
 genreRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
@@ -156,7 +156,7 @@ genreRoute = do
     getGenres
   let
     json = stringify $ encodeGenres genres
-  ok' jsonHeaders json
+  ok' (jsonHeaders <> corsHeadersAllOrigins) json
 
 
 rhythmRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> m Response
@@ -166,7 +166,7 @@ rhythmRoute genre = do
     getRhythmsForGenre genre
   let
     json = stringify $ encodeRhythms rhythms
-  ok' jsonHeaders json
+  ok' (jsonHeaders <> corsHeadersAllOrigins) json
 
 tunesRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> m Response
 tunesRoute genre = 
@@ -184,14 +184,14 @@ searchRoute genre params = do
     getTuneRefsPage genre searchExpression paginationExpression paging.defaultSize
   let
     json = stringify $ encodeTunesPage tunesPage 
-  ok' jsonHeaders json
+  ok' (jsonHeaders <> corsHeadersAllOrigins) json
 
 tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
 tuneRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   mTune <- liftAff $ withClient dbpool $ do
     getTuneAbc genre title
-  maybe notFound (ok' abcHeaders) mTune
+  maybe notFound (ok' (abcHeaders <> corsHeadersAllOrigins) ) mTune
 
 tuneMidiRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
 tuneMidiRoute genre title = do 
@@ -235,7 +235,7 @@ commentsRoute genre title = do
     Right comments -> do   
       let
         json = stringify $ encodeComments comments
-      ok' jsonHeaders json
+      ok'  (jsonHeaders <> corsHeadersAllOrigins) json
 
 addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> RequestBody -> m Response
 addCommentRoute genre title headers body = do 
@@ -263,7 +263,7 @@ commentRoute commentId = do
     Right comment -> do   
       let
         json = stringify $ encodeComment comment
-      ok' jsonHeaders json
+      ok'  (jsonHeaders <> corsHeadersAllOrigins) json
 
 deleteCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestHeaders -> m Response
 deleteCommentRoute commentId headers = do 
@@ -311,7 +311,7 @@ usersRoute pagingParams headers = do
       usersPage <- getUserRecordsPage paginationExpression paging.defaultSize c
       let
         json = stringify $ encodeUserRecordsPage usersPage
-      ok' jsonHeaders json
+      ok'  (jsonHeaders <> corsHeadersAllOrigins) json
 
 checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 checkUserRoute headers = do 
@@ -328,7 +328,7 @@ userRoute user headers = do
     getUserRecord user
   let
     mJson = map (stringify <<< encodeUserRecord ) mUser
-  maybe notFound (ok' jsonHeaders) mJson
+  maybe notFound (ok'  (jsonHeaders <> corsHeadersAllOrigins)) mJson
 
 insertUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
 insertUserRoute body = do 
@@ -355,7 +355,7 @@ validateUserRoute uuid = do
   dbpool :: Pool  <- asks _.dbpool
   _ <- liftAff $ withClient dbpool $ do
     validateUser uuid 
-  ok "validated"
+  ok' corsHeadersAllOrigins "validated"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 preflightOptionsRoute = do 
