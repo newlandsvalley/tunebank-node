@@ -13,7 +13,7 @@ import Data.Array (intercalate)
 import Data.Either (Either(..), either, isRight)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe, maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
@@ -33,7 +33,7 @@ import Tunebank.Database.Comment (deleteComment, deleteComments, getComments, ge
 import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
-import Tunebank.Database.Tune (getTuneAbc, deleteTune, upsertTune)
+import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
 import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
@@ -41,10 +41,10 @@ import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, pr
 import Tunebank.HTTP.Response (customForbidden, customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
 import Tunebank.Tools.Mail (sendRegistrationMail)
-import Tunebank.Types (Authorization, Comment, Genre, Rhythm, UserName)
+import Tunebank.Types (Authorization, Comment, Genre, Rhythm, TuneMetadata, UserName)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -53,6 +53,7 @@ data Route
   | Rhythms Genre
   | Tunes Genre
   | Tune Genre String
+  | TuneAbc Genre String
   | TuneMidi Genre String
   | Search Genre SearchParams
   | Comments Genre String 
@@ -88,6 +89,7 @@ route = root $ sum
   , "Rhythms": "genre" / genreSeg / "rhythm"
   , "Tunes": "genre" / genreSeg / "tune" 
   , "Tune": "genre" / genreSeg / "tune" / (string segment) 
+  , "TuneAbc": "genre" / genreSeg / "tune" / (string segment) / "abc"
   , "TuneMidi": "genre" / genreSeg / "tune" / (string segment) / "midi"
   , "Search":  "genre" / genreSeg / "search" ? 
        { title : optional <<< string
@@ -124,6 +126,7 @@ router { route: Tunes genre, method : Post, headers, body } = upsertTuneRoute ge
 router { route: Tunes genre } = tunesRoute genre
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
+router { route: TuneAbc genre title } = tuneAbcRoute genre title
 router { route: TuneMidi genre title } = tuneMidiRoute genre title
 router { route: Search genre params } = searchRoute genre params 
 router { route: Comments _genre _title, method: Options } = preflightOptionsRoute
@@ -186,12 +189,21 @@ searchRoute genre params = do
     json = stringify $ encodeTunesPage tunesPage 
   ok' (jsonHeaders <> corsHeadersAllOrigins) json
 
-tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
-tuneRoute genre title = do 
+tuneAbcRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneAbcRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   mTune <- liftAff $ withClient dbpool $ do
     getTuneAbc genre title
   maybe notFound (ok' (abcHeaders <> corsHeadersAllOrigins) ) mTune
+
+tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneRoute genre title = do 
+  dbpool :: Pool  <- asks _.dbpool
+  mMetadata :: Maybe TuneMetadata <- liftAff $ withClient dbpool $ do
+    getTuneMetadata genre title  
+  let 
+    mJson = map (encodeTuneMetadata >>> stringify) mMetadata
+  maybe notFound (ok' (jsonHeaders <> corsHeadersAllOrigins) ) mJson
 
 tuneMidiRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
 tuneMidiRoute genre title = do 
@@ -199,7 +211,6 @@ tuneMidiRoute genre title = do
   eMidi <- liftAff $ withClient dbpool $ do
     getTuneMidi genre title
   either customErrorResponse (ok' midiHeaders) eMidi
-
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 

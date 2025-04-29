@@ -12,7 +12,8 @@ The following URLs are supported:
 *  GET / _genre_ / **agenre** / _tune_ - get a paged list of tunes.
 *  POST / _genre_ / **agenre** / _tune_ - submit a tune in ABC format.
 *  GET / _genre_ / **agenre** / _exists_ - return true if the genre exists
-*  GET / _genre_ / **agenre** / _tune_ / **title** - get a tune in the format suggested by the Accept header.
+*  GET / _genre_ / **agenre** / _tune_ / **title** - get the tune metadata (many of the ABC header values plus the ABC in Json format)
+*  GET / _genre_ / **agenre** / _tune_ / **title** / _abc_ - get the tune in ABC format.
 *  DELETE / _genre_  / **agenre** / _tune_ / **title** - delete the tune from the database.
 *  GET / _genre_ / **agenre** / _tune_ / **title** / _exists_ - return true if the tune exists
 *  GET / _genre_ / **agenre** / _tune_ / **title** / **format** - get a tune the requested format (which can be abc, pdf or midi)

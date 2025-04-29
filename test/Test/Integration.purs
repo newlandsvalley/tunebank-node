@@ -13,11 +13,11 @@ import Effect.Class (liftEffect)
 import Effect.Console (logShow)
 import Foreign.Object (Object)
 import Foreign.Object (empty, singleton) as Object
-import Test.HTTPurple.TestHelpers (Test, awaitStarted, awaitStartedSecure, delete, get, get', getHeader, getStatus, post, postBinary, (?=))
+import Test.HTTPurple.TestHelpers (Test, awaitStarted, delete, get, getStatus, post, (?=))
 import Test.Spec (before_, describe, it)
-import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy, shouldNotSatisfy)
+import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 import Test.Spec.Assertions.String (shouldStartWith)
-import Test.Utils (getInitialCommentId, getTestCommentId, removeCommentsFrom, removeUser, withDBConnection)
+import Test.Utils (getInitialCommentId, getTestCommentId, removeUser, withDBConnection)
 
 -- | Integration tests requre that there is a running tunebank server on localhost:8080
 
@@ -35,6 +35,7 @@ getRequestsSpec =
     getGenres
     getRhythms
     getTuneAbc
+    getTuneMetadata
     getTuneMidi
     getComments
     getComment
@@ -93,10 +94,17 @@ getTuneAbc :: Test
 getTuneAbc =
   it "finds tune abc route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols"
+    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/abc"
     response `shouldStartWith` "X: 1"
     response `shouldSatisfy` contains (Pattern "Elverumspols")
 
+
+getTuneMetadata :: Test
+getTuneMetadata =
+  it "finds tune metadata route" do
+    awaitStarted 8080
+    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols"
+    response `shouldSatisfy` contains (Pattern "elverumspols")
 
 getTuneMidi :: Test
 getTuneMidi =

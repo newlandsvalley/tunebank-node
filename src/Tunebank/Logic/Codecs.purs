@@ -6,6 +6,7 @@ module Tunebank.Logic.Codecs
   , encodeUserRecordsPage
   , encodeGenres
   , encodeRhythms
+  , encodeTuneMetadata
   , encodeTuneRefs 
   , encodeTunesPage
   , encodeComments
@@ -39,6 +40,10 @@ encodeRhythms rhythms =
 
 encodeTuneRefs :: Array TuneRef -> Json 
 encodeTuneRefs = 
+  encodeJson
+
+encodeTuneMetadata :: TuneMetadata -> Json 
+encodeTuneMetadata = 
   encodeJson
 
 encodeTunesPage :: TuneRefsPage -> Json 
