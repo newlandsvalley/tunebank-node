@@ -57,6 +57,7 @@ type PaginationExpression =
 type PaginationResponse = 
   { page :: Int          -- e.g. page 1
   , maxPages :: Int      -- of 10
+  , size :: Int          -- number of entries per page
   }
 
 -- | a page of tune references

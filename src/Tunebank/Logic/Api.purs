@@ -49,7 +49,7 @@ getTuneRefsPage genre searchExpression paginationExpression pageSize c = do
   page = (paginationExpression.offset / pageSize) + 1
 
   paginate :: Int -> PaginationResponse
-  paginate maxPages = { page,  maxPages }
+  paginate maxPages = { page,  maxPages, size: pageSize }
 
 
 -- | decorate a tune page returned from the database with its paging information
@@ -68,7 +68,7 @@ getUserRecordsPage paginationExpression pageSize c = do
   page = (paginationExpression.offset / pageSize) + 1
 
   paginate :: Int -> PaginationResponse
-  paginate maxPages = { page,  maxPages }
+  paginate maxPages = { page,  maxPages, size: pageSize }
 
 getTuneMidi :: Genre -> Title -> Client -> Aff (Either ResponseError Buffer)
 getTuneMidi genre title c = do
