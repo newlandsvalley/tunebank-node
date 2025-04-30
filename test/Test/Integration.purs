@@ -119,7 +119,7 @@ getComments :: Test
 getComments =
   it "finds comments route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/comment"
+    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/comments"
     -- response `shouldStartWith` """{"comments":"""
     response `shouldSatisfy` contains (Pattern "horrible tune")
 
@@ -190,7 +190,7 @@ insertComment =
     newComment = """{"subject":"This is Bert's new comment to Elverumspols",""" <> 
                  """"text":"the comment has been inserted through the integration tests"}"""
     bertHeaders = authHeadersFor "Bert"
-    url = "/genre/scandi/tune/getingen/comment" 
+    url = "/genre/scandi/tune/getingen/comments" 
   _ <- liftEffect $ logShow $ "insert comment - trying POST to " <> url
   _ <- delete 8080 adminAuthHeaders url 
   response <- post 8080 bertHeaders url newComment

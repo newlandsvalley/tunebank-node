@@ -110,7 +110,7 @@ route = root $ sum
        }
   , "UserCheck": "user" / "check" / noArgs
   , "UserValidate": "user" / "validate" / (string segment)
-  , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comment"
+  , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comments"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
   , "CatchAll": catchAll
