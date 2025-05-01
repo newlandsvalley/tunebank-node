@@ -17,13 +17,13 @@ import Data.Maybe (Maybe, maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Console (logShow)
+import Effect.Console (log, logShow)
 import HTTPurple (Request, Method(..), notFound, ok, ok')
 import HTTPurple.Body (RequestBody)
 import HTTPurple.Body (toString) as Body
 import HTTPurple.Headers (RequestHeaders)
 import HTTPurple.Json (jsonHeaders)
-import HTTPurple.Response (Response)
+import HTTPurple.Response (Response, unauthorized)
 import HTTPurple.Routes (catchAll)
 import Routing.Duplex (RouteDuplex', optional, root, segment, string, int)
 import Routing.Duplex.Generic (noArgs, sum)
@@ -38,13 +38,13 @@ import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUse
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, preflightAllOrigins)
-import Tunebank.HTTP.Response (customForbidden, customBadRequest, customErrorResponse)
+import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
 import Tunebank.Tools.Mail (sendRegistrationMail)
-import Tunebank.Types (Authorization, Comment, Genre, Rhythm, TuneMetadata, UserName)
+import Tunebank.Types (Authorization, Genre, Rhythm, TuneMetadata, UserName)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -58,10 +58,10 @@ data Route
   | Search Genre SearchParams
   | Comments Genre String 
   | Comment Int
+  | UserCheck
   | Users
   | User UserName
   | UserSearch PagingParams
-  | UserCheck
   | UserValidate String
   | CheckRequest
   | CatchAll (Array String)
@@ -102,13 +102,13 @@ route = root $ sum
        , page : optional <<< int
        , sort : optional <<< string
        }
+  , "UserCheck": "user" / "check" / noArgs  -- comes first otherwise check taken as user name
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
   , "UserSearch": "search" ? 
        { page : optional <<< int
        , sort : optional <<< string
        }
-  , "UserCheck": "user" / "check" / noArgs
   , "UserValidate": "user" / "validate" / (string segment)
   , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comments"
   , "Comment": "comment" / (int segment)
@@ -137,11 +137,12 @@ router { route: Comment _id, method: Options } = preflightOptionsRoute
 router { route: Comment id, method: Delete, headers } = deleteCommentRoute id headers
 router { route: Comment id, method: Post, headers, body } = updateCommentRoute id body headers 
 router { route: Comment id} = commentRoute id
+router { route: UserCheck, method: Options } = preflightOptionsRoute
+router { route: UserCheck, headers } = checkUserRoute headers
 router { route: Users, method: Options } = preflightOptionsRoute
 router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute defaultUserPagingParams headers
 router { route: User user, headers } = userRoute user headers
-router { route: UserCheck, headers } = checkUserRoute headers
 router { route: UserSearch params, headers } = usersRoute params headers
 router { route: UserValidate uuid } = validateUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
@@ -324,16 +325,19 @@ usersRoute pagingParams headers = do
         json = stringify $ encodeUserRecordsPage usersPage
       ok'  (jsonHeaders <> corsHeadersAllOrigins) json
 
+
 checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 checkUserRoute headers = do 
+  _ <- liftEffect $ log "checkUserRoute"
   dbpool :: Pool  <- asks _.dbpool
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
-    withAnyAuthorization eAuth $ \auth -> do
-      ok ("user " <> show auth.user <> " found")
+    _ <- liftEffect $ logShow eAuth
+    either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth
 
 userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
 userRoute user headers = do 
+  _ <- liftEffect $ log "userRoute"
   dbpool :: Pool  <- asks _.dbpool
   mUser <- liftAff $ withClient dbpool $ do
     getUserRecord user

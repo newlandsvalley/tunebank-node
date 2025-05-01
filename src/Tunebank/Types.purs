@@ -29,6 +29,7 @@ import Data.Either (note)
 import Data.Argonaut.Encode.Class (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson, decodeJson)
 import Data.Argonaut.Decode.Error (JsonDecodeError(..))
+import HTTPurple.Body (class Body, defaultHeaders, write)
 import Yoga.Postgres.SqlValue (class IsSqlValue, toSql)
 
 -- | A user role
@@ -51,6 +52,11 @@ instance decodeJsonRole :: DecodeJson Role where
   decodeJson json = do
     string <- decodeJson json
     note (TypeMismatch "Role") (Just $ Role string)
+
+-- allow a Role to be sent in the response body
+instance bodyRole :: Body Role where 
+   defaultHeaders (Role r) = defaultHeaders r
+   write (Role r) = write r
 
 -- | A valid user
 newtype UserName = UserName String

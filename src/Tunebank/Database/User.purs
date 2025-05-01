@@ -70,7 +70,7 @@ getUserRole user c = do
 
 getUserRecord :: UserName -> Client -> Aff (Maybe UserRecord)
 getUserRecord (UserName user) c = do
-  _ <- liftEffect $ logShow ("trying to get user record for " <> user)
+  _ <- liftEffect $ logShow ("trying to get user record for user: " <> user)
   let 
     query = 
       "select username, email, rolename as role, valid, floor(extract (epoch from ts))::integer as timestamp" 

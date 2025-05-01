@@ -42,6 +42,8 @@ getRequestsSpec =
     getUsers
     getUsersForbidden
     registerUser
+    checkUser
+    checkUnknownUser
 
 
 postRequestsSpec :: Test
@@ -163,6 +165,20 @@ registerUser =
     response <- get 8080 Object.empty "/user/Jim"
     response `shouldStartWith` """{"valid":"Y"""
 
+checkUser :: Test
+checkUser =
+  it "checks a normal users credentials" do
+    awaitStarted 8080
+    response <- get 8080 normalAuthHeaders "/user/check"
+    response ?= "normaluser"
+
+checkUnknownUser :: Test
+checkUnknownUser =
+  it "rejects an unknown users credentials" do
+    awaitStarted 8080
+    responseStatus <- getStatus 8080 unknownAuthHeaders "/user/check"
+    responseStatus ?= 401 -- unauthorized
+
 
 -- POST request tests
 
@@ -246,8 +262,11 @@ adminAuthHeaders =
 
 normalAuthHeaders :: Object String
 normalAuthHeaders = 
-  -- Object.singleton "authorization" $ "Basic " <> (encode "John:changeit")
   authHeadersFor "John"
+
+unknownAuthHeaders :: Object String
+unknownAuthHeaders = 
+  authHeadersFor "UnknownUser"
 
 authHeadersFor :: String -> Object String
 authHeadersFor user = 
