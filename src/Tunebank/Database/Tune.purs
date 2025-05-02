@@ -71,12 +71,12 @@ upsertTune genre auth vAbc c = do
     (Just owner) -> 
       if (auth.user == owner || isAdministrator auth.role) then do
         title <- updateTune genre vAbc c
-        pure $ Right (title <> " updated")
+        pure $ Right title
       else 
         pure $ Left $ Forbidden "Only the original tune submitter or an administrator can update a tune"
     _ -> do
       title <- insertTune genre auth.user vAbc c
-      pure $ Right (title <> " inserted")
+      pure $ Right title
 
   pure result
 

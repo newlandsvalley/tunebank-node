@@ -13,3 +13,7 @@ Musicrest allows a tune title to be shared across different rhythms within a gen
 ## Comments
 
 Musicrest requires the client to generate a comment key derived from the current timestamp and the client will send a Json form which includes both this id and the name of the user who is posting the comment. Tunebank-node generates a unique key for the comment and also generates a timestamp.  The client, when posting a new comment, simply sends a Json form with the title and the text and, if updating, includes also the commentid it has retrieved from the server which is used in the POST url.
+
+## Tune Uploads
+
+Tunebank-node merely requires an ABC file to be uploaded in string format whereas Musicrest required it to be sent as form-url-encoded using the tag `abc`.

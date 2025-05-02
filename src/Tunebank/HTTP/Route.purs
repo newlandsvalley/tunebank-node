@@ -231,11 +231,11 @@ upsertTuneRoute genre headers body = do
     withAnyAuthorization eAuth $ \auth -> do
       abc <- Body.toString body
       case (buildMetadata abc) of
-        Left error -> 
+        Left error -> do
           customBadRequest error
         Right validatedAbc -> do
           eResult <- upsertTune genre auth validatedAbc c
-          either customErrorResponse (const $ ok "") eResult
+          either customErrorResponse (ok' corsHeadersAllOrigins) eResult
           
 commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
 commentsRoute genre title = do 
