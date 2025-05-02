@@ -19,6 +19,7 @@ data SearchCriterion
   | ByComposer
   | ByOrigin
   | ByTranscriber
+  | BySubmitter
 
 
 instance showSearchCriterion :: Show SearchCriterion where
@@ -29,6 +30,7 @@ instance showSearchCriterion :: Show SearchCriterion where
   show ByComposer = "composer"
   show ByOrigin = "origin"
   show ByTranscriber = "transcriber"
+  show BySubmitter = "submitter"
 
 
 derive instance eqSearchCriterion:: Eq SearchCriterion
