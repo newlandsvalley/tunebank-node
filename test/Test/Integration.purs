@@ -96,7 +96,7 @@ getTuneAbc :: Test
 getTuneAbc =
   it "finds tune abc route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/abc"
+    response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols/abc"
     response `shouldStartWith` "X: 1"
     response `shouldSatisfy` contains (Pattern "Elverumspols")
 
@@ -105,14 +105,14 @@ getTuneMetadata :: Test
 getTuneMetadata =
   it "finds tune metadata route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols"
-    response `shouldSatisfy` contains (Pattern "elverumspols")
+    response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols"
+    response `shouldSatisfy` contains (Pattern "Elverumspols")
 
 getTuneMidi :: Test
 getTuneMidi =
   it "finds tune MIDI route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/midi"
+    response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols/midi"
     response `shouldStartWith` "MTh"
     -- response `shouldSatisfy` contains (Pattern "Elverumspols")
 
@@ -121,7 +121,7 @@ getComments :: Test
 getComments =
   it "finds comments route" do
     awaitStarted 8080
-    response <- get 8080 Object.empty "/genre/scandi/tune/elverumspols/comments"
+    response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols/comments"
     -- response `shouldStartWith` """{"comments":"""
     response `shouldSatisfy` contains (Pattern "horrible tune")
 
@@ -206,7 +206,7 @@ insertComment =
     newComment = """{"subject":"This is Bert's new comment to Elverumspols",""" <> 
                  """"text":"the comment has been inserted through the integration tests"}"""
     bertHeaders = authHeadersFor "Bert"
-    url = "/genre/scandi/tune/getingen/comments" 
+    url = "/genre/scandi/tune/Getingen/comments" 
   _ <- liftEffect $ logShow $ "insert comment - trying POST to " <> url
   _ <- delete 8080 adminAuthHeaders url 
   response <- post 8080 bertHeaders url newComment

@@ -40,7 +40,7 @@ data SearchOperator
 
 instance showSearchOperator :: Show SearchOperator where 
   show Equals = " = "
-  show Like = " like "
+  show Like = " ilike "
 
 
 derive instance eqSearchOperator:: Eq SearchOperator
@@ -133,8 +133,10 @@ buildSearchExpression p =
     let 
       operator = 
         case c of 
-          ByRhythm -> Equals
+          -- we treat key signature differently.  We attempt to normalise both the key on the database
+          -- and the key supplied in the search and attempt to match them exactly
           ByKeySig -> Equals
+          -- everything else is case-insensitive Like (ILike in Postgres)
           _ -> Like  
       target = 
         case c of 

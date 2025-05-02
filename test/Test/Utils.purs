@@ -35,13 +35,13 @@ getTestCommentId c = do
 -- | get the id of the first of the comments we added to griffenfeldt when we set up the test database
 getInitialCommentId :: Client -> Aff Int
 getInitialCommentId c = do
-  eComments <- getComments (Genre "scandi") "griffenfeldt" c
+  eComments <- getComments (Genre "scandi") "Griffenfeldt" c
   case eComments of 
-    Left _err -> unsafeCrashWith "Test setup failure - couldn't find griffenfeldt"
+    Left _err -> unsafeCrashWith "Test setup failure - couldn't find Griffenfeldt"
     Right comments -> 
       case (head comments) of
         Nothing -> 
-          unsafeCrashWith "Test setup failure - couldn't find any comments for griffenfeldt"
+          unsafeCrashWith "Test setup failure - couldn't find any comments for Griffenfeldt"
         Just comment -> 
           pure comment.id
 

@@ -17,8 +17,8 @@ import Data.Maybe (Maybe(..))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Data.Lens.Fold (firstOf)
 import Data.Lens.Traversal (traversed)
-import Data.String.Common (toLower)
 import Data.String (joinWith)
+import Data.String.Common (toLower)
 import Tunebank.Types (Rhythm(..))
 
 type UnvalidatedAbc  = 
@@ -92,7 +92,7 @@ buildMetadata =
 nonEmpty :: String -> Maybe String -> V Errors String
 nonEmpty fieldName Nothing = invalid [fieldName <> " cannot be empty"]
 nonEmpty fieldName (Just "")  = invalid [fieldName <> " cannot be empty"]
-nonEmpty _ (Just value)  = pure $ toLower value
+nonEmpty _ (Just value)  = pure $ value
 
 nonEmptyRhythm :: Maybe Rhythm -> V Errors Rhythm
 nonEmptyRhythm Nothing = invalid ["rhythm cannot be empty"]

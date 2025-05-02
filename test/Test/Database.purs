@@ -147,17 +147,17 @@ tuneSpec =
          defaultPaginationExpression
       length res `shouldEqual` 2
     it "finds tune metadata" do
-      mMetadata <- withDBConnection $ getTuneMetadata (Genre "scandi") "elverumspols" 
+      mMetadata <- withDBConnection $ getTuneMetadata (Genre "scandi") "Elverumspols" 
       case mMetadata of 
         Nothing -> 
            fail "no matching tune found"
         Just metadata -> do
-           metadata.title `shouldEqual` "elverumspols"
+           metadata.title `shouldEqual` "Elverumspols"
            metadata.composer `shouldEqual` Nothing
            metadata.submitter `shouldEqual` (UserName "John")
       pure unit
     it "finds tune abc" do
-      result <- withDBConnection $ getTuneAbc (Genre "scandi") "elverumspols" 
+      result <- withDBConnection $ getTuneAbc (Genre "scandi") "Elverumspols" 
       result `shouldSatisfy` isJust
       pure unit
 
@@ -171,12 +171,12 @@ commentSpec =
           , text : "This is a horrible tune"
           }
       res <- withDBConnection do
-        insertComment (Genre "scandi") "elverumspols" newComment (UserName "John")
+        insertComment (Genre "scandi") "Elverumspols" newComment (UserName "John")
       res `shouldSatisfy` isRight
 
     it "gets all comment for a tune" do
       res <- withDBConnection do 
-        getComments (Genre "scandi") "griffenfeldt"
+        getComments (Genre "scandi") "Griffenfeldt"
       -- res `shouldSatisfy` isRight
       case res of 
         Left err -> 
@@ -223,7 +223,7 @@ commentSpec =
         case eRes of 
           Left err -> fail $ show err
           Right _ -> do
-            eComments <- getComments (Genre "scandi") "griffenfeldt" c
+            eComments <- getComments (Genre "scandi") "Griffenfeldt" c
             case eComments of 
               Left err1 -> fail $ show err1
               Right comments -> 
@@ -240,7 +240,7 @@ searchSpec =
                       , { criterion: ByKeySig, operator: Equals, target:"BMinor"}
                       ]
       buildSearchExpressionString expression `shouldEqual` 
-        " and title like '%Fastan%' and rhythm = 'polska' and keysig = 'BMinor'"
+        " and title ilike '%Fastan%' and rhythm = 'polska' and keysig = 'BMinor'"
   
 
 -- the tunes table in the database for the scandi genre is completely rebuilt just once before any tests run
@@ -279,9 +279,9 @@ deleteAllComments c = do
 deleteAllComments :: Client -> Aff Unit 
 deleteAllComments c = do
   -- _ <- liftEffect $ log "DELETING COMMENTS FROM griffenfeldt, elverumspols and getingen"
-  _ <- deleteComments (Genre "scandi") "griffenfeldt" c
-  _ <- deleteComments (Genre "scandi") "elverumspols" c
-  _ <- deleteComments (Genre "scandi") "getingen" c
+  _ <- deleteComments (Genre "scandi") "Griffenfeldt" c
+  _ <- deleteComments (Genre "scandi") "Elverumspols" c
+  _ <- deleteComments (Genre "scandi") "Getingen" c
   pure unit
 
 
@@ -298,8 +298,8 @@ insertTwoComments c =
       , text : "This is the text of comment 2"
       }  
   in do
-    _ <- insertComment (Genre "scandi") "griffenfeldt" newComment1 (UserName "John") c
-    _ <- insertComment (Genre "scandi") "griffenfeldt" newComment2 (UserName "John") c
+    _ <- insertComment (Genre "scandi") "Griffenfeldt" newComment1 (UserName "John") c
+    _ <- insertComment (Genre "scandi") "Griffenfeldt" newComment2 (UserName "John") c
     pure unit
   
 
