@@ -100,6 +100,7 @@ type SearchParams =
   , composer :: Maybe String
   , origin :: Maybe String
   , transcriber :: Maybe String
+  , submitter :: Maybe String
   , page :: Maybe Int
   , sort :: Maybe String
   }
@@ -113,6 +114,7 @@ defaultSearchParams =
   , composer : Nothing
   , origin : Nothing
   , transcriber : Nothing
+  , submitter : Nothing
   , page: (Just 1)
   , sort: (Just "alpha")
   }
@@ -162,7 +164,9 @@ buildSearchExpression p =
         >>> Map.insert BySource p.source
         >>> Map.insert ByComposer p.composer
         >>> Map.insert ByOrigin p.origin 
-        >>> Map.insert ByTranscriber p.transcriber) Map.empty
+        >>> Map.insert ByTranscriber p.transcriber
+        >>> Map.insert BySubmitter p.submitter
+        ) Map.empty
     in
       Map.toUnfoldable $ Map.catMaybes fullMap
 

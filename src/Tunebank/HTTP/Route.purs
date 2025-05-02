@@ -10,7 +10,7 @@ import Prelude hiding ((/))
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Argonaut (printJsonDecodeError, stringify)
 import Data.Array (intercalate)
-import Data.Either (Either(..), either, isRight)
+import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (Maybe, maybe)
@@ -99,10 +99,11 @@ route = root $ sum
        , composer : optional <<< string
        , origin : optional <<< string
        , transcriber : optional <<< string
+       , submitter : optional <<< string
        , page : optional <<< int
        , sort : optional <<< string
        }
-  , "UserCheck": "user" / "check" / noArgs  -- comes first otherwise check taken as user name
+  , "UserCheck": "user" / "check" / noArgs  -- comes first otherwise 'check' taken as user name
   , "Users": "user" / noArgs
   , "User": "user" / userSeg
   , "UserSearch": "search" ? 
@@ -179,7 +180,7 @@ tunesRoute genre =
 searchRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> SearchParams -> m Response
 searchRoute genre params = do 
   paging :: PagingConfig  <- asks _.paging
-  let 
+  let     
     searchExpression = buildSearchExpression params
     paginationExpression = buildSearchPaginationExpression params paging.defaultSize
   _ <- liftEffect $ logShow searchExpression
