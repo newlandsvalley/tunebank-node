@@ -252,18 +252,19 @@ commentsRoute genre title = do
 
 addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> RequestBody -> m Response
 addCommentRoute genre title headers body = do 
+  -- _ <- liftEffect $ logShow "addCommentRoute"
   dbpool :: Pool  <- asks _.dbpool 
   jsonString <- Body.toString body
   {- eNewComment :: Either JsonDecodeError NewComment -}
   case (decodeNewComment jsonString) of
-    Left err -> 
+    Left err -> do
       customBadRequest $ printJsonDecodeError err
     Right newComment -> do 
       liftAff $ withClient dbpool $ \c -> do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
           eResult <- insertComment genre title newComment auth.user c
-          either customErrorResponse (show >>> ok) eResult
+          either customErrorResponse (show >>> ok' corsHeadersAllOrigins) eResult
           
 commentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> m Response
 commentRoute commentId = do 
@@ -381,7 +382,7 @@ routeError :: forall m. MonadAff m => MonadAsk Env m => Array String -> m Respon
 routeError paths = do 
   let 
     fullPath = intercalate "/" paths
-  ok ("we got a routing error: " <> fullPath )
+  ok' corsHeadersAllOrigins ("we got a routing error: " <> fullPath )
 
 routeCheckRequest :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 routeCheckRequest headers = do 

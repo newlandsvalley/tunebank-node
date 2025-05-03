@@ -65,7 +65,7 @@ corsAllowMethods  =
 
 corsAllowAuthorization :: ResponseHeaders
 corsAllowAuthorization  = 
-  headers { "Access-Control-Allow-Headers": "Authorization" }
+  headers { "Access-Control-Allow-Headers": "Authorization, Content-type" }
   
 corsMaxAge :: ResponseHeaders
 corsMaxAge  = 

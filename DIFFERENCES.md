@@ -17,3 +17,7 @@ Musicrest requires the client to generate a comment key derived from the current
 ## Tune Uploads
 
 Tunebank-node merely requires an ABC file to be uploaded in string format whereas Musicrest required it to be sent as form-url-encoded using the tag `abc`.
+
+## All other POST requests
+
+Tunebank-node requires the body of all other POST requests to be in JSON formay whereas Musicrest required a form-url-encoded body.
