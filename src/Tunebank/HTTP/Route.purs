@@ -311,7 +311,7 @@ updateCommentRoute id body headers = do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
           eResult <- updateComment id updatedComment auth c
-          either customErrorResponse (const $ ok "") eResult
+          either customErrorResponse (show >>> ok' corsHeadersAllOrigins) eResult
 
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
 usersRoute pagingParams headers = do 
