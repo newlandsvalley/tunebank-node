@@ -264,6 +264,7 @@ flushUsers= do
     -- delete any existing new user from previous test runs
     deleteUser (UserName "NewUser") c
     deleteUser (UserName "Albert") c
+    deleteUser (UserName "Keir Starmer") c
 
 deleteAllScandiTunes :: Client -> Aff Unit 
 deleteAllScandiTunes c = do

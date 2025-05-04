@@ -225,7 +225,7 @@ updateComment =
     url = "/comment/" <> (show commentId)
   -- _ <- liftEffect $ logShow $ "update comment - trying POST to " <> url
   response <- post 8080 johnHeaders url updatedComment
-  response `shouldEqual` ""
+  response `shouldEqual` "unit"
 
 
 forbidUpdateToComment :: Test 

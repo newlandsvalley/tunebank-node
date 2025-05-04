@@ -39,7 +39,8 @@ sendRegistrationMail toAddress uuid = do
   transporter :: NM.Transporter <- liftEffect $ createTransporter transportConfig  
   message <- liftEffect $ createMessage toAddress validationUrl
   info <- liftAff $  sendMail_ message transporter
-  when (config.host == "smtp.ethereal.email)") do
+  _ <- liftEffect $ log ("Registration email message sent to " <> config.auth.user)
+  when (config.host == "smtp.ethereal.email") do
     liftEffect $ log $ "You can confirm a mail at: " <> (show $ getTestMessageUrl info)
   pure unit
 
