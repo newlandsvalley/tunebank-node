@@ -34,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (getUserRecord, insertUnvalidatedUser, validateUser)
+import Tunebank.Database.User (deleteUser, getUserRecord, insertUnvalidatedUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, preflightAllOrigins)
@@ -143,7 +143,9 @@ router { route: UserCheck, headers } = checkUserRoute headers
 router { route: Users, method: Options } = preflightOptionsRoute
 router { route: Users, method: Post, body} = insertUserRoute body
 router { route: Users, headers } = usersRoute defaultUserPagingParams headers
-router { route: User user, headers } = userRoute user headers
+router { route: User _user, method: Options } = preflightOptionsRoute
+router { route: User user, method: Delete, headers } = deleteUserRoute user headers
+router { route: User user } = userRoute user
 router { route: UserSearch params, headers } = usersRoute params headers
 router { route: UserValidate uuid } = validateUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
@@ -337,8 +339,8 @@ checkUserRoute headers = do
     _ <- liftEffect $ logShow eAuth
     either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth
 
-userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
-userRoute user headers = do 
+userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> m Response
+userRoute user = do 
   _ <- liftEffect $ log "userRoute"
   dbpool :: Pool  <- asks _.dbpool
   mUser <- liftAff $ withClient dbpool $ do
@@ -362,10 +364,20 @@ insertUserRoute body = do
       case eResult of  
         Right uuid -> do
           _ <- sendRegistrationMail newUser.email uuid
-          ok uuid 
+          ok' corsHeadersAllOrigins uuid 
         Left err -> do
           customErrorResponse err
 
+
+deleteUserRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
+deleteUserRoute user headers = do 
+  _ <- liftEffect $ log "deleteUserRoute"
+  dbpool :: Pool  <- asks _.dbpool 
+  liftAff $ withClient dbpool $ \c -> do
+    eAuth ::  Either String Authorization <- getAuthorization headers c
+    withAdminAuthorization eAuth $ \_auth -> do
+      _result <- deleteUser user c
+      ok' corsHeadersAllOrigins ""
 
 validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
 validateUserRoute uuid = do 
