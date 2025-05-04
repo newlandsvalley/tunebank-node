@@ -221,7 +221,7 @@ deleteTuneRoute genre title headers = do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteTune genre title auth.user c
-      either customErrorResponse (const $ ok "") eResult
+      either customErrorResponse (const $ ok' corsHeadersAllOrigins "") eResult
 
 upsertTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> RequestHeaders -> RequestBody -> m Response
 upsertTuneRoute genre headers body = do 
@@ -286,7 +286,7 @@ deleteCommentRoute commentId headers = do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteComment commentId auth c
-      either customErrorResponse (const $ ok "") eResult
+      either customErrorResponse (const $ ok' corsHeadersAllOrigins "") eResult
 
 deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
 deleteTuneCommentsRoute genre title headers = do 
@@ -295,7 +295,7 @@ deleteTuneCommentsRoute genre title headers = do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAdminAuthorization eAuth $ \_auth -> do
       _result <- deleteComments genre title c
-      ok ""
+      ok' corsHeadersAllOrigins ""
 
 updateCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestBody -> RequestHeaders -> m Response
 updateCommentRoute id body headers = do 
