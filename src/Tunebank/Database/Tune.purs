@@ -91,7 +91,7 @@ deleteTune genre title user c = do
   case mOwner of 
     (Just owner) -> do
       if (user == owner || isAdministrator userRole) then do
-        _ <- execute (Query "delete from tunes where genre = $1 and and title = $2") 
+        _ <- execute (Query "delete from tunes where genre = $1 and title = $2") 
            [ toSql genre, toSql title ] c
         pure $ Right unit
       else 

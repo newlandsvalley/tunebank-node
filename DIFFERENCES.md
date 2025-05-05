@@ -21,3 +21,7 @@ Tunebank-node merely requires an ABC file to be uploaded in string format wherea
 ## All other POST requests
 
 Tunebank-node requires the body of all other POST requests to be in JSON formay whereas Musicrest required a form-url-encoded body.
+
+## Error Responses
+
+When an error is returned with accompanying text (as it is for `BadRequest` or `Forbidden`) then is is returned as JSON with a single tag named `message`.

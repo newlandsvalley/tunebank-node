@@ -51,3 +51,14 @@ URLs that return lists take optional paging parameters indicating the number of 
 #### CORS Headers
 
 In order to support requests which emanate from a JavaScript `HttpRequest`, the URL scheme provides appropriate CORS headers.  All responses include an `Access-Control-Allow-Origin` response header and all `POST` or `DELETE` requests induce a set of pre-flight response headers which respond to an `OPTIONS` request that the browser will issue in these cases.
+
+#### Error Responses
+
+The set of possible HTTP errors that may be returned from the server is restricted to:
+
+  * `BadRequest` (400) plus message
+  * `Unauthorized` (401)
+  * `Forbidden` (403) plus message
+  * `InternalServerError` (500)
+
+Error responses messages are returned in JSON format with a single tag - `message`. 

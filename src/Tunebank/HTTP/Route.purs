@@ -125,6 +125,7 @@ router { route: Rhythms genre } = rhythmRoute genre
 router { route: Tunes _genre, method : Options } = preflightOptionsRoute
 router { route: Tunes genre, method : Post, headers, body } = upsertTuneRoute genre headers body
 router { route: Tunes genre } = tunesRoute genre
+router { route: Tune _genre _title, method : Options } = preflightOptionsRoute
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
 router { route: TuneAbc genre title } = tuneAbcRoute genre title
@@ -218,6 +219,7 @@ tuneMidiRoute genre title = do
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 
+  _ <- liftEffect $ logShow "deleteTuneRoute"
   dbpool :: Pool  <- asks _.dbpool 
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c

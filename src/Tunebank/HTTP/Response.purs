@@ -17,7 +17,7 @@ import Tunebank.Logic.Codecs (encodeMessage)
 
 
 data ResponseError 
-  = BadRequest String    -- usually not found
+  = BadRequest String    -- usually resource not found
   | Forbidden String
   | NotAuthorized
   | InternalServerError String
