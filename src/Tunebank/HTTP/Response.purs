@@ -9,9 +9,10 @@ import Prelude
 
 import Data.Argonaut (stringify)
 import Effect.Aff.Class (class MonadAff)
+import HTTPurple.Json (jsonHeaders)
 import HTTPurple.Response (Response, badRequest', response', internalServerError, unauthorized)
 import HTTPurple.Status (forbidden) as Status
-import HTTPurple.Json (jsonHeaders)
+import Tunebank.HTTP.Headers (corsHeadersAllOrigins)
 import Tunebank.Logic.Codecs (encodeMessage)
 
 
@@ -48,13 +49,13 @@ customBadRequest :: forall m. MonadAff m => String -> m Response
 customBadRequest message = do
   let 
     body = stringify $ encodeMessage message
-  badRequest' jsonHeaders body
+  badRequest' (jsonHeaders <> corsHeadersAllOrigins) body
 
 -- | 403 Forbidden with a json message in the body
 customForbidden :: forall m. MonadAff m => String -> m Response
 customForbidden message = do
   let 
     body = stringify $ encodeMessage message
-  response' Status.forbidden jsonHeaders body
+  response' Status.forbidden (jsonHeaders <> corsHeadersAllOrigins) body
 
 
