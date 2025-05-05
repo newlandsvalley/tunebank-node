@@ -11,7 +11,7 @@ module Tunebank.Types
   , Password
   , Rhythm(..)
   , RhythmRecord
-  , Title
+  , Title(..)
   , TuneMetadata
   , TuneRef
   , UserRecord
@@ -137,8 +137,29 @@ instance decodeJsonRhythm :: DecodeJson Rhythm where
 instance sqlValueRhythm :: IsSqlValue Rhythm where
   toSql (Rhythm r) = toSql r
 
--- | the tune title 
-type Title = String
+
+-- | the tune title
+newtype Title = Title String
+
+derive instance genericTitle :: Generic Title _
+derive instance newtypeTitle :: Newtype Title _
+derive newtype instance eqTitle :: Eq Title
+derive newtype instance ordTitle:: Ord Title
+
+instance encodeJsonTitle :: EncodeJson Title where
+  encodeJson (Title t) = encodeJson t
+
+instance showTitle :: Show Title where
+  show (Title t) = t
+
+instance decodeJsonTitle :: DecodeJson Title where
+  decodeJson json = do
+    string <- decodeJson json
+    note (TypeMismatch "Title") (Just $ Title string)
+
+instance sqlValueTitle :: IsSqlValue Title where
+  toSql (Title t) = toSql t
+
 
 type GenreRecord = 
   { genre :: Genre }

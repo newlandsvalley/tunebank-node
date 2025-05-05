@@ -15,12 +15,12 @@ import Test.Spec (Spec, before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 import Tunebank.Tools.Loader (uploadTunes)
 import Tunebank.Pagination (defaultPaginationExpression)
-import Tunebank.Types (Genre(..), Rhythm(..), UserName(..), NewUser, Role(..))
+import Tunebank.Types (Genre(..), Rhythm(..), Title(..), UserName(..), NewUser, Role(..))
 import Tunebank.Database.Comment (getComments, deleteComment, deleteComments, insertComment, updateComment)
 import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
-import Tunebank.Database.Search
+import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.User
 import Tunebank.HTTP.Response (ResponseError(..))
 import Yoga.Postgres (Client, Query(Query), execute_)
@@ -147,17 +147,17 @@ tuneSpec =
          defaultPaginationExpression
       length res `shouldEqual` 2
     it "finds tune metadata" do
-      mMetadata <- withDBConnection $ getTuneMetadata (Genre "scandi") "Elverumspols" 
+      mMetadata <- withDBConnection $ getTuneMetadata (Genre "scandi") (Title "Elverumspols")
       case mMetadata of 
         Nothing -> 
            fail "no matching tune found"
         Just metadata -> do
-           metadata.title `shouldEqual` "Elverumspols"
+           metadata.title `shouldEqual` (Title "Elverumspols")
            metadata.composer `shouldEqual` Nothing
            metadata.submitter `shouldEqual` (UserName "John")
       pure unit
     it "finds tune abc" do
-      result <- withDBConnection $ getTuneAbc (Genre "scandi") "Elverumspols" 
+      result <- withDBConnection $ getTuneAbc (Genre "scandi") (Title "Elverumspols") 
       result `shouldSatisfy` isJust
       pure unit
 
@@ -171,12 +171,12 @@ commentSpec =
           , text : "This is a horrible tune"
           }
       res <- withDBConnection do
-        insertComment (Genre "scandi") "Elverumspols" newComment (UserName "John")
+        insertComment (Genre "scandi") (Title "Elverumspols") newComment (UserName "John")
       res `shouldSatisfy` isRight
 
     it "gets all comment for a tune" do
       res <- withDBConnection do 
-        getComments (Genre "scandi") "Griffenfeldt"
+        getComments (Genre "scandi") (Title "Griffenfeldt")
       -- res `shouldSatisfy` isRight
       case res of 
         Left err -> 
@@ -223,7 +223,7 @@ commentSpec =
         case eRes of 
           Left err -> fail $ show err
           Right _ -> do
-            eComments <- getComments (Genre "scandi") "Griffenfeldt" c
+            eComments <- getComments (Genre "scandi") (Title "Griffenfeldt") c
             case eComments of 
               Left err1 -> fail $ show err1
               Right comments -> 
@@ -280,9 +280,9 @@ deleteAllComments c = do
 deleteAllComments :: Client -> Aff Unit 
 deleteAllComments c = do
   -- _ <- liftEffect $ log "DELETING COMMENTS FROM griffenfeldt, elverumspols and getingen"
-  _ <- deleteComments (Genre "scandi") "Griffenfeldt" c
-  _ <- deleteComments (Genre "scandi") "Elverumspols" c
-  _ <- deleteComments (Genre "scandi") "Getingen" c
+  _ <- deleteComments (Genre "scandi") (Title "Griffenfeldt") c
+  _ <- deleteComments (Genre "scandi") (Title "Elverumspols") c
+  _ <- deleteComments (Genre "scandi") (Title "Getingen") c
   pure unit
 
 
@@ -299,8 +299,8 @@ insertTwoComments c =
       , text : "This is the text of comment 2"
       }  
   in do
-    _ <- insertComment (Genre "scandi") "Griffenfeldt" newComment1 (UserName "John") c
-    _ <- insertComment (Genre "scandi") "Griffenfeldt" newComment2 (UserName "John") c
+    _ <- insertComment (Genre "scandi") (Title "Griffenfeldt") newComment1 (UserName "John") c
+    _ <- insertComment (Genre "scandi") (Title "Griffenfeldt") newComment2 (UserName "John") c
     pure unit
   
 

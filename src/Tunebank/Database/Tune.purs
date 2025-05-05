@@ -12,7 +12,7 @@ import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Logic.AbcMetadata (ValidatedAbc)
 import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
-import Tunebank.Types (Authorization, UserName(..), Title, TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
+import Tunebank.Types (Authorization, UserName(..), Title(..), TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
 import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult, read', singleIntResult)
@@ -66,7 +66,7 @@ getTuneId genre title c = do
 upsertTune :: Genre -> Authorization -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
 upsertTune genre auth vAbc c = do
   -- userRole <- getUserRole user c
-  mOwner <- getTuneOwner genre vAbc.title c
+  mOwner <- getTuneOwner genre (Title vAbc.title) c
   result <- case mOwner of 
     (Just owner) -> 
       if (auth.user == owner || isAdministrator auth.role) then do
@@ -83,7 +83,7 @@ upsertTune genre auth vAbc c = do
 
 deleteTune :: Genre -> Title -> UserName -> Client -> Aff (Either ResponseError Unit)
 deleteTune genre title user c = do
-  _ <- liftEffect $ logShow ("trying to delete tune " <> title)
+  _ <- liftEffect $ logShow ("trying to delete tune " <> show title)
   mOwner <- getTuneOwner genre title c
   mRole <- getUserRole user c
   let 
@@ -97,7 +97,7 @@ deleteTune genre title user c = do
       else 
         pure $ Left $ Forbidden "Only the original tune submitter or an administrator can delete a tune"
     Nothing -> 
-      pure $ Left $ BadRequest ("tune: " <> title <> " not found")
+      pure $ Left $ BadRequest ("tune: " <> show title <> " not found")
 
 
 countSelectedTunes :: Genre -> SearchExpression -> Client -> Aff Int 
@@ -123,7 +123,7 @@ getTuneRefs genre searchExpression paginationExpression c = do
 
 getTuneMetadata :: Genre -> Title -> Client -> Aff (Maybe TuneMetadata)
 getTuneMetadata genre title c = do
-  _ <- liftEffect $ logShow ("trying to get metadata for tune " <> title)
+  _ <- liftEffect $ logShow ("trying to get metadata for tune " <> show title)
   let 
     queryText = "select title, source, composer, origin, transcriber, submitter, id, " <>
                 " floor(extract (epoch from ts))::integer as timestamp, abc " <>
@@ -133,7 +133,7 @@ getTuneMetadata genre title c = do
 
 getTuneAbc :: Genre -> Title -> Client -> Aff (Maybe String)
 getTuneAbc genre title c = do
-  _ <- liftEffect $ logShow ("trying to get abc for tune " <> title)
+  _ <- liftEffect $ logShow ("trying to get abc for tune " <> show title)
   let 
     queryText = "select abc from tunes where genre = $1 and title = $2 "    
     params = [toSql genre, toSql title]

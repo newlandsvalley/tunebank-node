@@ -19,7 +19,7 @@ import Tunebank.Database.Utils (maybeIntResult, maybeStringResult)
 import Tunebank.Database.User (deleteUser)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Database.Comment (getComments, deleteComments)
-import Tunebank.Types (Genre(..), UserName(..))
+import Tunebank.Types (Genre(..), UserName(..), Title(..))
 import Partial.Unsafe (unsafeCrashWith)
 
 -- | get the id of the test comment set up by the installation script
@@ -35,7 +35,7 @@ getTestCommentId c = do
 -- | get the id of the first of the comments we added to griffenfeldt when we set up the test database
 getInitialCommentId :: Client -> Aff Int
 getInitialCommentId c = do
-  eComments <- getComments (Genre "scandi") "Griffenfeldt" c
+  eComments <- getComments (Genre "scandi") (Title "Griffenfeldt") c
   case eComments of 
     Left _err -> unsafeCrashWith "Test setup failure - couldn't find Griffenfeldt"
     Right comments -> 
@@ -65,7 +65,7 @@ removeUser user =
 
 
 -- | remove all comments from the named tune
-removeCommentsFrom :: String -> Aff Unit
+removeCommentsFrom :: Title -> Aff Unit
 removeCommentsFrom title = 
   withDBConnection do 
     deleteComments (Genre "scandi") title

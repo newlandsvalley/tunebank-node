@@ -44,7 +44,7 @@ import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
 import Tunebank.Tools.Mail (sendRegistrationMail)
-import Tunebank.Types (Authorization, Genre, Rhythm, TuneMetadata, UserName)
+import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName)
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -52,11 +52,11 @@ data Route
   | Genres
   | Rhythms Genre
   | Tunes Genre
-  | Tune Genre String
-  | TuneAbc Genre String
-  | TuneMidi Genre String
+  | Tune Genre Title
+  | TuneAbc Genre Title
+  | TuneMidi Genre Title
   | Search Genre SearchParams
-  | Comments Genre String 
+  | Comments Genre Title
   | Comment Int
   | UserCheck
   | Users
@@ -78,6 +78,11 @@ instance showRoute :: Show Route where
 genreSeg :: RouteDuplex' Genre
 genreSeg = _Newtype segment
 
+
+-- | a string matching segment for the Title newtype
+titleSeg :: RouteDuplex' Title
+titleSeg = _Newtype segment
+
 -- | a string matching segment for the UserName newtype
 userSeg :: RouteDuplex' UserName
 userSeg = _Newtype segment
@@ -88,9 +93,9 @@ route = root $ sum
   , "Genres": "genre" / noArgs
   , "Rhythms": "genre" / genreSeg / "rhythm"
   , "Tunes": "genre" / genreSeg / "tune" 
-  , "Tune": "genre" / genreSeg / "tune" / (string segment) 
-  , "TuneAbc": "genre" / genreSeg / "tune" / (string segment) / "abc"
-  , "TuneMidi": "genre" / genreSeg / "tune" / (string segment) / "midi"
+  , "Tune": "genre" / genreSeg / "tune" / titleSeg
+  , "TuneAbc": "genre" / genreSeg / "tune" / titleSeg / "abc"
+  , "TuneMidi": "genre" / genreSeg / "tune" / titleSeg / "midi"
   , "Search":  "genre" / genreSeg / "search" ? 
        { title : optional <<< string
        , key : optional <<< string
@@ -111,7 +116,7 @@ route = root $ sum
        , sort : optional <<< string
        }
   , "UserValidate": "user" / "validate" / (string segment)
-  , "Comments": "genre" / genreSeg / "tune" / (string segment) / "comments"
+  , "Comments": "genre" / genreSeg / "tune" / titleSeg / "comments"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
   , "CatchAll": catchAll
@@ -194,14 +199,14 @@ searchRoute genre params = do
     json = stringify $ encodeTunesPage tunesPage 
   ok' (jsonHeaders <> corsHeadersAllOrigins) json
 
-tuneAbcRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneAbcRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 tuneAbcRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   mTune <- liftAff $ withClient dbpool $ do
     getTuneAbc genre title
   maybe notFound (ok' (abcHeaders <> corsHeadersAllOrigins) ) mTune
 
-tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 tuneRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   mMetadata :: Maybe TuneMetadata <- liftAff $ withClient dbpool $ do
@@ -210,14 +215,14 @@ tuneRoute genre title = do
     mJson = map (encodeTuneMetadata >>> stringify) mMetadata
   maybe notFound (ok' (jsonHeaders <> corsHeadersAllOrigins) ) mJson
 
-tuneMidiRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+tuneMidiRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 tuneMidiRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   eMidi <- liftAff $ withClient dbpool $ do
     getTuneMidi genre title
   either customErrorResponse (ok' midiHeaders) eMidi
 
-deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
+deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 
   _ <- liftEffect $ logShow "deleteTuneRoute"
   dbpool :: Pool  <- asks _.dbpool 
@@ -241,7 +246,7 @@ upsertTuneRoute genre headers body = do
           eResult <- upsertTune genre auth validatedAbc c
           either customErrorResponse (ok' corsHeadersAllOrigins) eResult
           
-commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> m Response
+commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 commentsRoute genre title = do 
   dbpool :: Pool  <- asks _.dbpool
   eComments <- liftAff $ withClient dbpool $ do
@@ -254,7 +259,7 @@ commentsRoute genre title = do
         json = stringify $ encodeComments comments
       ok'  (jsonHeaders <> corsHeadersAllOrigins) json
 
-addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> RequestBody -> m Response
+addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> RequestBody -> m Response
 addCommentRoute genre title headers body = do 
   -- _ <- liftEffect $ logShow "addCommentRoute"
   dbpool :: Pool  <- asks _.dbpool 
@@ -292,7 +297,7 @@ deleteCommentRoute commentId headers = do
       eResult <- deleteComment commentId auth c
       either customErrorResponse (const $ ok' corsHeadersAllOrigins "") eResult
 
-deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> String -> RequestHeaders -> m Response
+deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneCommentsRoute genre title headers = do 
   dbpool :: Pool  <- asks _.dbpool 
   liftAff $ withClient dbpool $ \c -> do

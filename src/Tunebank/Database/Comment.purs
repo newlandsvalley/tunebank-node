@@ -29,7 +29,7 @@ insertComment genre title comment (UserName user) c = do
   mTuneId <- getTuneId genre title c
   case mTuneId of 
     Nothing -> do 
-      pure $ Left $ BadRequest ("Tune not found: " <> title) 
+      pure $ Left $ BadRequest ("Tune not found: " <> show title) 
     Just tuneId -> do
       let 
         queryText = "insert into comments ( tuneid, subject, comment, submitter) " <>
@@ -44,7 +44,7 @@ getComments genre title  c = do
   mTuneId <- getTuneId genre title c
   case mTuneId of 
     Nothing -> do 
-      pure $ Left $ BadRequest ("Tune not found: " <> title) 
+      pure $ Left $ BadRequest ("Tune not found: " <> show title) 
     Just tuneId -> do
       let 
         queryText = "select subject, comment as text, submitter, id, " <>
@@ -91,7 +91,7 @@ deleteComment commentId auth c = do
 -- | delete all comments for a tune
 deleteComments :: Genre -> Title -> Client -> Aff Unit
 deleteComments genre title  c = do
-  _ <- liftEffect $ logShow ("trying to delete all comments for tune " <> title)
+  _ <- liftEffect $ logShow ("trying to delete all comments for tune " <> show title)
   let 
     query = "delete from comments where tuneid in (select id from tunes where genre = $1 and title = $2)"
   _ <- execute (Query query) [toSql genre, toSql title] c

@@ -75,7 +75,7 @@ getTuneMidi genre title c = do
   mAbc :: Maybe String <- getTuneAbc genre title c
   case mAbc of 
     Nothing -> 
-      pure $ Left $ BadRequest $ "not found - tune: " <> title
+      pure $ Left $ BadRequest $ "not found - tune: " <> show title
     Just abcString -> 
       case (parse abcString) of 
         Left { error, pos } -> 
