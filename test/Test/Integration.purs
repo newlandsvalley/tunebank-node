@@ -7,7 +7,7 @@ import Prelude
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), isJust)
 import Data.String.Base64 (encode)
-import Data.String.CodeUnits (contains, length)
+import Data.String.CodeUnits (contains)
 import Data.String.Pattern (Pattern(..))
 import Effect.Class (liftEffect)
 import Effect.Console (logShow)
@@ -188,8 +188,7 @@ insertNewUser =
   let 
     newUser = """{"name":"Albert","password":"changeit","email":"princealbert@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
-  -- a successful user insert returns a 36-character regsitration uuid
-  (length response) `shouldEqual` 36
+  response `shouldEqual` "User: Albert created."
 
 insertExistingUser :: Test
 insertExistingUser = 

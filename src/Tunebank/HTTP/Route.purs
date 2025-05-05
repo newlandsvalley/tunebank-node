@@ -364,7 +364,7 @@ insertUserRoute body = do
       case eResult of  
         Right uuid -> do
           _ <- sendRegistrationMail newUser.email uuid
-          ok' corsHeadersAllOrigins uuid 
+          ok' corsHeadersAllOrigins ("User: " <> newUser.name <> " created.")
         Left err -> do
           customErrorResponse err
 
