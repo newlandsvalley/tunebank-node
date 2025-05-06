@@ -54,11 +54,11 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
 
 Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a production version of `dbroles-test.sql` with a production user name and password and provide a production version of `tunebank.conf` which uses these production names and passwords. In addition, you will need to use your own SMTP service.
 
-Once you have these, make your own copy of `tunebank.conf` and edit this to provide the appropriate connections to yourt database and email service.
+Once you have these, make your own copy of `tunebank.conf` and edit this to provide the appropriate connections to your database and email service.
 
 ### Running the Server
 
-  * Bundle the app into a single file `index.js` using npm `run bundle-server`.
+  * Bundle the app into a single file `index.js` using `npm run bundle-server`.
   * Create a home directory to house your server and copy index.js to it.
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
   * Run using `node .`
