@@ -3,6 +3,7 @@
 conf/tunebank.yaml
 installation/SQL/dbroles.sql
 node_modules/
+server/index.js
 .pulp-cache/
 output/
 output-es/
