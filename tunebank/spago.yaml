@@ -1,0 +1,30 @@
+package:
+  name: tunebank-node
+  dependencies:
+    - abc-parser
+    - argonaut
+    - b64
+    - console
+    - effect
+    - foldable-traversable
+    - httpurple
+    - integers
+    - newtype
+    - node-fs
+    - node-buffer
+    - node-path
+    - nodemailer
+    - prelude
+    - string-parsers
+    - strings
+    - ordered-collections
+    - validation
+    - yaml-next
+    - yoga-postgres
+  test:
+    main: Test.Main
+    dependencies:
+      - aff
+      - effect
+      - spec
+      - spec-node

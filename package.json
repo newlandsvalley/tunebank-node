@@ -7,7 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "build": "spago build"
+    "build": "spago build",
+    "test": "spago test",
+    "server": "spago run -p server"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",

@@ -32,15 +32,20 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
 
 ## Building 
 
-spago build
+`npm run build`
 
 ## Testing
+
+### Setup
 
   * Install Postgres using your own superuser name and create a database named `tunedbtest`.
   * Copy `prototype-tunebank.conf` to `tunebank.conf`.
   * Run the SQL scripts in alphabetical order.
-  * Run up the `tunebank-node` server using `spago run` (required for the integration tests).
-  * Run the tests - `spago test`.
+  * Run up the `tunebank-node` server (required for the integration tests) - `npm run server`.
+
+### Running the Tests
+
+  * Run the tests - `npm run test`.
   * Check the server log for mail confirmation.  This should establish that a user registration message has been sent to an ethereal url which you can then inspect.
 
 ### Security - Testing

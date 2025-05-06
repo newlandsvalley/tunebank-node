@@ -1,0 +1,4 @@
+package:
+  name: server
+  dependencies:
+    - tunebank-node
