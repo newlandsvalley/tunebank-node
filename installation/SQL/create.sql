@@ -50,3 +50,7 @@ create table comments (
     FOREIGN KEY(tuneid) REFERENCES tunes(id) ON DELETE CASCADE
 );
 
+create index rhythm_idx ON tunes (genre, rhythm);
+create index keysig_idx ON tunes (genre, keysig);
+create index tuneid_idx ON comments (tuneid);
+
