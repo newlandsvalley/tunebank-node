@@ -1,5 +1,6 @@
 module Tunebank.Database.User
-  ( assertKnownUser
+  ( UserValidity(..)
+  , assertKnownUser
   , assertIsAdministrator
   , deleteUser
   , getUserCount
@@ -9,7 +10,7 @@ module Tunebank.Database.User
   , getUserRole
   , existsUser
   , existsValidatedUser
-  , insertUnvalidatedUser
+  , insertUser
   , validateUser
   , changeUserPassword
   , validateCredentials) where
@@ -27,8 +28,14 @@ import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
 import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
-import Tunebank.Types (Authorization, Credentials, NewUser, Email, Password, UserName(..), Role (..), UserRecord)
+import Tunebank.Types (Authorization, Credentials, NewUser, Password, UserName(..), Role (..), UserRecord)
 import Tunebank.HTTP.Response (ResponseError(..))
+
+-- | Validity of a user about to be inserted
+data UserValidity =
+    Unvalidated
+  | Prevalidated
+
 
 -- | return true if the user exists and is validated
 existsValidatedUser :: UserName -> Client -> Aff Boolean
@@ -108,20 +115,27 @@ deleteUser user c = do
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
 -- | insert an as yet unvalidated user, returning the UUID needed for the eventual validation
-insertUnvalidatedUser :: NewUser -> Client -> Aff (Either ResponseError String)
-insertUnvalidatedUser newUser c = do
+insertUser :: NewUser -> UserValidity -> Client -> Aff (Either ResponseError String)
+insertUser newUser userValidity c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
   if (userAlreadyExists) then do
     _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
     pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
   else do
     let 
+      valid = validity userValidity
       queryText = ("insert into users (username, rolename, passwd, email, valid) " <>
-                  " values ($1, 'normaluser', $2, $3, 'N' )" <> 
+                  " values ($1, 'normaluser', $2, $3, $4 )" <> 
                   " returning CAST(registrationid AS CHAR(36))")
     _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
-    mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String)) [ toSql newUser.name, toSql newUser.password, toSql newUser.email ] c
+    mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String)) 
+      [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ] c
     pure $ note (InternalServerError $ "user insert failed for " <> newUser.name) (join mResult)
+
+    where      
+    validity :: UserValidity -> String 
+    validity Unvalidated = "N"
+    validity Prevalidated = "Y"
 
 assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do

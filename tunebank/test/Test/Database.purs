@@ -21,7 +21,8 @@ import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
-import Tunebank.Database.User
+import Tunebank.Database.User (UserValidity(..), deleteUser, existsUser, getUserRecord, getUserRecords, 
+              getUserRole, insertUser, validateCredentials, validateUser)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Yoga.Postgres (Client, Query(Query), execute_)
 import Test.Utils (getInitialCommentId, getRegistrationId, withDBConnection)
@@ -67,7 +68,7 @@ userSpec = before_ flushUsers do
         newUser = { name: "NewUser", password: "changeit", email: "newuser@google.com" }
       -- this should return Right (UUID String) of 36 characters
       res <- withDBConnection do
-        insertUnvalidatedUser newUser
+        insertUser newUser Unvalidated
       let 
         lengthRes = rmap STRING.length res      
       lengthRes `shouldEqual` (Right 36)
@@ -76,7 +77,7 @@ userSpec = before_ flushUsers do
         newUser :: NewUser
         newUser = { name: "John", password: "changeit", email: "john@google.com" }     
       res <- withDBConnection do
-        insertUnvalidatedUser newUser
+        insertUser newUser Unvalidated
       res `shouldEqual` Left (BadRequest ("username " <> newUser.name <> " is already taken"))
     it "validates a user" do  
       withDBConnection $ \c -> do 

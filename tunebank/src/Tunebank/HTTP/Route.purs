@@ -34,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (deleteUser, getUserRecord, insertUnvalidatedUser, validateUser)
+import Tunebank.Database.User (UserValidity(..), deleteUser, getUserRecord, insertUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, preflightAllOrigins)
@@ -366,7 +366,7 @@ insertUserRoute body = do
     Right newUser -> do 
       dbpool :: Pool  <- asks _.dbpool
       eResult <- liftAff $ withClient dbpool $ do
-        insertUnvalidatedUser newUser
+        insertUser newUser Unvalidated
       
       case eResult of  
         Right uuid -> do
