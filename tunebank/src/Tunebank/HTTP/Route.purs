@@ -42,7 +42,7 @@ import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
-import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression, defaultUserPagingParams)
+import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
 import Tunebank.Tools.Mail (sendRegistrationMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName)
 import Yoga.Postgres (Pool, withClient)
@@ -59,9 +59,8 @@ data Route
   | Comments Genre Title
   | Comment Int
   | UserCheck
-  | Users
+  | Users PagingParams
   | User UserName
-  | UserSearch PagingParams
   | UserValidate String
   | CheckRequest
   | CatchAll (Array String)
@@ -109,12 +108,11 @@ route = root $ sum
        , sort : optional <<< string
        }
   , "UserCheck": "user" / "check" / noArgs  -- comes first otherwise 'check' taken as user name
-  , "Users": "user" / noArgs
-  , "User": "user" / userSeg
-  , "UserSearch": "search" ? 
+  , "Users": "user" ? 
        { page : optional <<< int
        , sort : optional <<< string
        }
+  , "User": "user" / userSeg
   , "UserValidate": "user" / "validate" / (string segment)
   , "Comments": "genre" / genreSeg / "tune" / titleSeg / "comments"
   , "Comment": "comment" / (int segment)
@@ -146,13 +144,12 @@ router { route: Comment id, method: Post, headers, body } = updateCommentRoute i
 router { route: Comment id} = commentRoute id
 router { route: UserCheck, method: Options } = preflightOptionsRoute
 router { route: UserCheck, headers } = checkUserRoute headers
-router { route: Users, method: Options } = preflightOptionsRoute
-router { route: Users, method: Post, body} = insertUserRoute body
-router { route: Users, headers } = usersRoute defaultUserPagingParams headers
+router { route: Users _params, method: Options } = preflightOptionsRoute
+router { route: Users _params , method: Post, body } = insertUserRoute body
+router { route: Users params, headers } = usersRoute params headers
 router { route: User _user, method: Options } = preflightOptionsRoute
 router { route: User user, method: Delete, headers } = deleteUserRoute user headers
 router { route: User user } = userRoute user
-router { route: UserSearch params, headers } = usersRoute params headers
 router { route: UserValidate uuid } = validateUserRoute uuid
 router { route: CheckRequest, headers } = routeCheckRequest headers
 router { route: CatchAll paths } = routeError paths
@@ -325,6 +322,7 @@ updateCommentRoute id body headers = do
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
 usersRoute pagingParams headers = do 
   paging :: PagingConfig  <- asks _.paging
+  _ <- liftEffect $ log ("user paging params: " <> show pagingParams)
   let 
     paginationExpression = buildPaginationExpression pagingParams paging.defaultSize
   dbpool :: Pool  <- asks _.dbpool

@@ -28,7 +28,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
 import Node.Path (FilePath, concat)
 import Yoga.Postgres (ClientConfig) as Postgres
-import NodeMailer (AuthConfig, TransportConfig) as NM
+import NodeMailer (AuthConfig) as NM
 
 type ServerConfig = 
   { host :: String 

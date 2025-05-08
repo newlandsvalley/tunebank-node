@@ -33,6 +33,9 @@ data SortKey
 
 derive instance eqSortKey :: Eq SortKey
 
+instance showSortKey :: Show SortKey where
+  show ByAlphaKey = "sort by alpha"
+  show ByDateKey = "sort by date"
 
 interpretSortKey :: PageType -> SortKey -> String 
 interpretSortKey page k =

@@ -40,6 +40,7 @@ getRequestsSpec =
     getComments
     getComment
     getUsers
+    getUsersPage2
     getUsersForbidden
     registerUser
     checkUser
@@ -140,11 +141,18 @@ getComment =
 
 getUsers :: Test
 getUsers =
-  it "finds users route if admin auth" do
+  it "finds users route  if admin auth" do
     awaitStarted 8080
     response <- get 8080 adminAuthHeaders "/user"
     response `shouldSatisfy` contains (Pattern "john.watson@gmx.co.uk")
     response `shouldStartWith` """{"users":[{"valid":"""
+
+getUsersPage2 :: Test
+getUsersPage2 =
+  it "finds empty page of users on page 2" do
+    awaitStarted 8080
+    response <- get 8080 adminAuthHeaders "/user?page=2"
+    response `shouldStartWith` """{"users":[]"""
 
 getUsersForbidden :: Test
 getUsersForbidden =
