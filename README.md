@@ -48,7 +48,7 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
   * Run the tests - `npm run test`.
   * Check the server log for mail confirmation.  This should establish that a user registration message has been sent to an ethereal url which you can then inspect.
 
-### Production
+## Production
 
 ### Security
 
@@ -63,5 +63,8 @@ Once you have these, make your own copy of `tunebank.conf` and edit this to prov
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
   * Run using `node .`
 
+## Migration from Musicrest
+
+The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server.  (The details of these servers are not available to github.)
 
 

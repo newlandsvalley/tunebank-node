@@ -18,7 +18,8 @@ type ServerAffM = Aff (Effect Unit -> Effect Unit)
 
 main :: Effect Unit
 main = launchAff_ do 
-  eConfig <- loadConfig  
+  -- load the config file tunebank.yaml which must be in the conf subdirectory
+  eConfig <- loadConfig "conf"
   case eConfig of 
     Right config -> do
       _ <- runServer config

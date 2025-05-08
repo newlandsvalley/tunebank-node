@@ -10,7 +10,8 @@
     "build": "spago build",
     "test": "spago test",
     "server": "spago run -p server",
-    "bundle-server": "spago bundle -p server --bundle-type app --platform node"
+    "migration": "spago run -p migration -m Migrate",
+    "bundle-server": "spago bundle -p server --bundle-type app --platform node --outfile tunebank.js"
   },
   "dependencies": {
     "esbuild": "^0.25.4",

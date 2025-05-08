@@ -26,7 +26,7 @@ import Effect.Class (liftEffect)
 import Effect.Console (logShow)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
-import Node.Path (concat)
+import Node.Path (FilePath, concat)
 import Yoga.Postgres (ClientConfig) as Postgres
 import NodeMailer (AuthConfig, TransportConfig) as NM
 
@@ -38,12 +38,6 @@ type ServerConfig =
 type PagingConfig = 
   { defaultSize :: Int }
 
-{-}
-type MailAuth = 
-  { user :: String
-  , pass :: String 
-  }
--}
 
 type MailConfig = 
   { host :: String 
@@ -77,10 +71,10 @@ decodeYamlConfig s = case runExcept $ parseYAMLToJson s of
   decodeDBConfig = 
     decodeJson 
 
-loadConfig :: Aff (Either String TunebankConfig)
-loadConfig = do
+loadConfig :: FilePath -> Aff (Either String TunebankConfig)
+loadConfig dirPath = do
   let
-    fullPath = concat ["conf", "tunebank.yaml"]
+    fullPath = concat [dirPath, "tunebank.yaml"]
   _ <- liftEffect $ logShow ("reading config from " <> fullPath)
   text <- readTextFile UTF8 fullPath
   liftEffect $ decodeYamlConfig text
