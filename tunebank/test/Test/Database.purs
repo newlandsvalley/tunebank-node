@@ -41,7 +41,7 @@ userSpec :: Spec Unit
 userSpec = before_ flushUsers do
   describe "users table" do
     it "finds role by user name" do
-      res <- withDBConnection $ getUserRole (UserName "Administrator")
+      res <- withDBConnection $ getUserRole (UserName "administrator")
       res `shouldEqual` (Just (Role "administrator"))
     it "returns role - nothing if unknown user " do
       res <- withDBConnection $ getUserRole (UserName "NotAKnownUser")
@@ -197,7 +197,7 @@ commentSpec =
           updatedComment = { subject : "This is new comment 1"
                            , text : "This is new text 1"             
                            }
-          auth = { user : (UserName "Administrator")
+          auth = { user : (UserName "administrator")
                  , role : (Role "administrator")
                  }
         updateComment commentId updatedComment auth c

@@ -32,7 +32,8 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
 
 ## Building 
 
-`npm run build`
+  * to build - `npm run build`
+  * to bundle the server - `npm run bundle-server`
 
 ## Testing
 
@@ -45,7 +46,7 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
 
 ### Running the Tests
 
-  * Run the tests - `npm run test`.
+  * Run the tests - `spago test`.
   * Check the server log for mail confirmation.  This should establish that a user registration message has been sent to an ethereal url which you can then inspect.
 
 ## Production
@@ -61,10 +62,12 @@ Once you have these, make your own copy of `tunebank.conf` and edit this to prov
   * Bundle the app into a single file `index.js` using `npm run bundle-server`.
   * Create a home directory to house your server and copy index.js to it.
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
-  * Run using `node .`
+  * Run using `node .` or run `npm run server`.
 
 ## Migration from Musicrest
 
 The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server.  (The details of these servers are not available to github.)
+
+To migrate - `npm run migration`.
 
 

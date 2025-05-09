@@ -265,7 +265,7 @@ forbidDeleteComment =
 -- Basic Auth headers for different users
 adminAuthHeaders :: Object String
 adminAuthHeaders = 
-  Object.singleton "authorization" $ "Basic " <> (encode "Administrator:changeit")
+  Object.singleton "authorization" $ "Basic " <> (encode "administrator:changeit")
 
 normalAuthHeaders :: Object String
 normalAuthHeaders = 

@@ -98,7 +98,7 @@ withDBConnection execution = do
 
 adminAuth :: Authorization 
 adminAuth = 
-  { user : UserName "Administrator"
+  { user : UserName "administrator"
   , role : Role "administrator"
   }
 
