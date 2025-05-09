@@ -8,24 +8,24 @@ import Data.Either (Either(..), isRight)
 import Data.Maybe (Maybe(..), isJust)
 import Data.String.CodeUnits (length) as STRING
 import Effect.Aff (Aff)
-import Effect.Console (log)
 import Effect.Class (liftEffect)
+import Effect.Console (log)
 import Prelude (Unit, bind, discard, map, pure, show, unit, ($), (<>))
 import Test.Spec (Spec, before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
-import Tunebank.Tools.Loader (uploadTunes)
-import Tunebank.Pagination (defaultPaginationExpression)
-import Tunebank.Types (Genre(..), Rhythm(..), Title(..), UserName(..), NewUser, Role(..))
+import Test.Utils (adminAuth, fastan, generatePostgresTimestamp, getInitialCommentId, getRegistrationId, withDBConnection)
 import Tunebank.Database.Comment (getComments, deleteComment, deleteComments, insertComment, updateComment)
 import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
-import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
-import Tunebank.Database.User (UserValidity(..), deleteUser, existsUser, getUserRecord, getUserRecords, 
-              getUserRole, insertUser, validateCredentials, validateUser)
+import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
+import Tunebank.Database.User (UserValidity(..), deleteUser, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
 import Tunebank.HTTP.Response (ResponseError(..))
+import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
+import Tunebank.Pagination (defaultPaginationExpression)
+import Tunebank.Tools.Loader (uploadTunes)
+import Tunebank.Types (Genre(..), Rhythm(..), Title(..), UserName(..), NewUser, Role(..))
 import Yoga.Postgres (Client, Query(Query), execute_)
-import Test.Utils (getInitialCommentId, getRegistrationId, withDBConnection)
 
 
 databaseSpec :: Spec Unit
@@ -160,6 +160,12 @@ tuneSpec =
     it "finds tune abc" do
       result <- withDBConnection $ getTuneAbc (Genre "scandi") (Title "Elverumspols") 
       result `shouldSatisfy` isJust
+      pure unit
+    it "upserts a tune with a client-generated timestamp" do
+      ts <- liftEffect generatePostgresTimestamp
+      result <- withDBConnection $ \c -> do 
+        upsertValidatedTuneWithTs adminAuth c (Genre "scandi") ts fastan
+      result `shouldEqual` (Right "Fastan")
       pure unit
 
 commentSpec :: Spec Unit

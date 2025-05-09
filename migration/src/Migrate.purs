@@ -9,10 +9,13 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Node.Path (FilePath, concat, normalize)
-import Users (arbitrageUser, decodeUser, readMigrationFile)
+import Tunes (migrateTune, decodeTune)
+import Users (arbitrageUser, decodeUser)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Config (TunebankConfig, loadConfig)
 import Yoga.Postgres (withClient, mkPool)
+import Types (IncomingGenre)
+import Utils (readMigrationFile)
 
 stagingServer :: FilePath 
 stagingServer = "/home/john/services/tunebank-node/"
@@ -34,5 +37,18 @@ migrateUsers config = do
   dbpool <- liftEffect $ mkPool $ connectionInfo config.db
   withClient dbpool $ \c -> do
     sequence_ $ map (arbitrageUser c) userList
+
+migrateTunes :: IncomingGenre -> TunebankConfig -> Aff Unit
+migrateTunes incomingGenre config = do
+  let 
+    filename = (show incomingGenre) <> "tunes.json"
+  tunes <- readMigrationFile $ concat  [normalize stagingServer, "migration", filename]
+  let 
+    tuneList = map decodeTune tunes 
+
+  dbpool <- liftEffect $ mkPool $ connectionInfo config.db
+  withClient dbpool $ \c -> do
+    sequence_ $ map (migrateTune incomingGenre c) tuneList
+
 
 

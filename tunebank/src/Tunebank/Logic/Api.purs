@@ -2,7 +2,9 @@ module Tunebank.Logic.Api
    ( getTuneMidi
    , getTuneRefsPage
    , getUserRecordsPage
-   , upsertValidatedTune) where
+   , upsertValidatedTune
+   , upsertValidatedTuneWithTs
+   ) where
 
 import Prelude
 import Data.Abc.Midi (toMidi)
@@ -14,10 +16,10 @@ import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Node.Buffer (Buffer, fromArray)
 import Yoga.Postgres (Client)
-import Tunebank.Database.Tune (countSelectedTunes, getTuneAbc, getTuneRefs, upsertTune)
+import Tunebank.Database.Tune (countSelectedTunes, getTuneAbc, getTuneRefs, upsertTune, upsertTuneWithTs)
 import Tunebank.Database.User (getUserRecords, getUserCount)
 import Tunebank.Database.Search (SearchExpression)
-import Tunebank.Types (Authorization, Genre, Title)
+import Tunebank.Types (Authorization, Genre, Title, TimestampString)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
 import Tunebank.HTTP.Response (ResponseError(..))
@@ -30,6 +32,17 @@ upsertValidatedTune auth c genre tuneString =
   case (buildMetadata (tuneString <> "\n")) of 
     Right abcMetadata -> do
       upsertTune genre auth abcMetadata c          
+    Left err -> do
+      pure $ Left $ BadRequest err
+
+-- | upsert a tune together with a timestamp - insert or update the database as appropriate
+-- | useful for migration
+upsertValidatedTuneWithTs :: Authorization -> Client -> Genre -> TimestampString -> String -> Aff (Either ResponseError String)
+upsertValidatedTuneWithTs auth c genre timestamp tuneString =    
+  -- make sure the tune is terminated before we parse it
+  case (buildMetadata (tuneString <> "\n")) of 
+    Right abcMetadata -> do
+      upsertTuneWithTs genre auth timestamp abcMetadata c          
     Left err -> do
       pure $ Left $ BadRequest err
 

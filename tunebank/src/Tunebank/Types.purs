@@ -11,6 +11,7 @@ module Tunebank.Types
   , Password
   , Rhythm(..)
   , RhythmRecord
+  , TimestampString
   , Title(..)
   , TuneMetadata
   , TuneRef
@@ -82,6 +83,8 @@ instance decodeJsonUserName :: DecodeJson UserName where
 
 type Password = String
 type Email = String
+-- a postgres timestamp string which is of the form YYYY-MM-DD hh:mm:ss
+type TimestampString = String
 
 -- | unvalidated user credentials
 type Credentials = 

@@ -2,7 +2,7 @@ module Users
   ( MusicrestUser 
   , arbitrageUser
   , decodeUser
-  , readMigrationFile)
+  )
   where
 
 import Prelude
@@ -13,13 +13,9 @@ import Data.Bifunctor (bimap)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe)
 import Data.String (length)
-import Data.String.Utils (lines)
 import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
 import Effect.Aff (Aff)
-import Node.Encoding (Encoding(..))
-import Node.FS.Aff (readTextFile)
-import Node.Path (FilePath)
 import Tunebank.Database.User (UserValidity(..), insertUser)
 import Tunebank.HTTP.Response (ResponseError)
 import Tunebank.Types (NewUser)
@@ -34,8 +30,8 @@ type MusicrestUser =
   }
 
 
-decodeJsonMusicRestUser :: Json -> Either JsonDecodeError MusicrestUser
-decodeJsonMusicRestUser json = do
+decodeJsonMusicrestUser :: Json -> Either JsonDecodeError MusicrestUser
+decodeJsonMusicrestUser json = do
     obj <- decodeJson json
     name <- obj .: "_id"
     password <- obj .: "password"
@@ -54,14 +50,8 @@ decodeUser jsonString =
       else 
         Left ""
     Right json ->
-      bimap printJsonDecodeError identity $ decodeJsonMusicRestUser json
+      bimap printJsonDecodeError identity $ decodeJsonMusicrestUser json
 
-
-readMigrationFile :: FilePath -> Aff (Array String)
-readMigrationFile filePath = do
-  _ <- liftEffect $ log ("trying to read file: " <> filePath)
-  text <- readTextFile UTF8 filePath
-  pure $ lines text
 
 
 -- inspect the result of decoding a Musicrest JSON string as a User 

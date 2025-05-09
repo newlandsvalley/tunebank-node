@@ -12,12 +12,13 @@ import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Logic.AbcMetadata (ValidatedAbc)
 import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
-import Tunebank.Types (Authorization, UserName(..), Title(..), TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
+import Tunebank.Types (Authorization, UserName(..), TimestampString, Title(..), TuneMetadata, TuneRef, Genre, Role(..), isAdministrator)
 import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult, read', singleIntResult)
 import Tunebank.HTTP.Response (ResponseError(..))
 
+-- | insert a tune to the database, allowing the database to add the timestamp
 insertTune :: Genre -> UserName -> ValidatedAbc -> Client -> Aff String
 insertTune genre user vAbc c = do
   let 
@@ -29,7 +30,7 @@ insertTune genre user vAbc c = do
   _ <- execute (Query query) params c
   pure vAbc.title
 
- 
+-- | update a tune in the database
 updateTune :: Genre -> ValidatedAbc -> Client -> Aff String
 updateTune genre vAbc c = do
   let 
@@ -42,6 +43,20 @@ updateTune genre vAbc c = do
   _ <- liftEffect $ logShow ("trying to update tune " <> vAbc.title)
   _ <- execute (Query query) params c 
   pure vAbc.title
+
+
+-- | insert a tune to the database including the timestamp
+-- | this is useful in migrating from MusicRest
+insertTuneWithTs :: Genre -> UserName -> TimestampString -> ValidatedAbc -> Client -> Aff String
+insertTuneWithTs genre user timestamp vAbc c = do
+  let 
+    query = "insert into tunes ( title, genre, rhythm, submitter, keysig, composer, origin, source, transcriber, abc, ts) "
+            <> " values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 )"
+    params = [toSql vAbc.title, toSql genre, toSql vAbc.rhythm, toSql user, toSql vAbc.keysig, toSql vAbc.composer] <>
+              [toSql vAbc.origin, toSql vAbc.source, toSql vAbc.transcriber, toSql vAbc.abc, toSql timestamp] 
+  _ <- execute (Query query) params c
+  pure vAbc.title
+
 
 getTuneOwner :: Genre -> Title -> Client -> Aff (Maybe UserName)
 getTuneOwner genre title c = do
@@ -63,6 +78,7 @@ getTuneId genre title c = do
   pure $ join mId
 
 
+-- | upsert a tune, allowing the database to add the timestamp
 upsertTune :: Genre -> Authorization -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
 upsertTune genre auth vAbc c = do
   -- userRole <- getUserRole user c
@@ -76,6 +92,24 @@ upsertTune genre auth vAbc c = do
         pure $ Left $ Forbidden "Only the original tune submitter or an administrator can update a tune"
     _ -> do
       title <- insertTune genre auth.user vAbc c
+      pure $ Right title
+
+  pure result
+
+-- | upset a tune where we supply the timestamp for insert - useful for migration
+upsertTuneWithTs :: Genre -> Authorization -> TimestampString -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
+upsertTuneWithTs genre auth timestamp vAbc c = do
+  -- userRole <- getUserRole user c
+  mOwner <- getTuneOwner genre (Title vAbc.title) c
+  result <- case mOwner of 
+    (Just owner) -> 
+      if (auth.user == owner || isAdministrator auth.role) then do
+        title <- updateTune genre vAbc c
+        pure $ Right title
+      else 
+        pure $ Left $ Forbidden "Only the original tune submitter or an administrator can update a tune"
+    _ -> do
+      title <- insertTuneWithTs genre auth.user timestamp vAbc c
       pure $ Right title
 
   pure result
