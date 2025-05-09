@@ -11,6 +11,8 @@ import Data.Argonaut.Decode.Error (JsonDecodeError, printJsonDecodeError)
 import Data.Argonaut.Decode.Parser (parseJson)
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..), either)
+import Data.Number (fromString)
+import Data.Maybe (fromMaybe)
 import Data.String (length)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
@@ -19,25 +21,16 @@ import Tunebank.HTTP.Response (ResponseError)
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Types (Genre(..), Role(..), UserName(..))
 import Types (IncomingGenre)
-import Utils (tsToDateTimeString)
+import Utils (mongoTsToDateTimeString)
 import Yoga.Postgres (Client)
 
-{-}
-type MongoId = 
-  { oid :: String }
--}
 
 type MusicrestTune =
   { abc :: String
   , abcHeaders :: String
   , submitter :: String 
-  , ts :: Int
+  , ts :: String
   }
-
-{-}
-decodeJsonMongoId :: Json -> Either JsonDecodeError MongoId
-decodeJsonMongoId json = do
--} 
 
 decodeJsonMusicrestTune :: Json -> Either JsonDecodeError MusicrestTune
 decodeJsonMusicrestTune json = do
@@ -73,18 +66,20 @@ migrateTune incomingGenre c eTune = do
 migrateTune' :: IncomingGenre -> MusicrestTune -> Client -> Aff (Either ResponseError String)
 migrateTune' incomingGenre musicrestTune c = do
   let 
-    abc = musicrestTune.abc <> musicrestTune.abcHeaders
+    abc = musicrestTune.abcHeaders <> musicrestTune.abc
     genre = Genre $ show incomingGenre
-    timestamp = tsToDateTimeString musicrestTune.ts
+    musicrestTs = fromMaybe 0.0 $ fromString musicrestTune.ts
+    timestamp = mongoTsToDateTimeString musicrestTs
     auth = 
       if (musicrestTune.submitter  == "administrator ") then 
-        { user : UserName musicrestTune.submitter
+        { user : UserName "administrator"
         , role : Role "administrator" 
         }
       else 
         { user : UserName musicrestTune.submitter
         , role : Role "normaluser" 
         }
+  -- _ <- liftEffect $ log $ "abc: " <> abc
   upsertValidatedTuneWithTs auth c genre timestamp abc
 
 

@@ -1,12 +1,10 @@
 module Utils 
   ( readMigrationFile
-  , tsToDateTimeString
+  , mongoTsToDateTimeString
   ) where
 
 import Prelude
 
-
-import Data.Int (toNumber)
 import Data.Maybe (maybe)
 import Data.Either (either)
 import Data.DateTime.Instant (instant, toDateTime)
@@ -26,12 +24,10 @@ readMigrationFile filePath = do
   text <- readTextFile UTF8 filePath
   pure $ lines text
 
-
-tsToDateTimeString :: Int -> String
-tsToDateTimeString ts =
+mongoTsToDateTimeString :: Number -> String
+mongoTsToDateTimeString ts =
   let
-     mInstant = instant $ Milliseconds $ (toNumber ts) * 1000.0
-     -- mInstant = instant $ Milliseconds $ readFloat tsString
+     mInstant = instant $ Milliseconds ts
      dateTime = maybe (bottom) (toDateTime) mInstant
   in
     either (const "bad date") identity $ formatDateTime "YYYY-MM-DD hh:mm:ss" dateTime

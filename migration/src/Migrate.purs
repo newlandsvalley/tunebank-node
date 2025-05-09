@@ -14,7 +14,7 @@ import Users (arbitrageUser, decodeUser)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Config (TunebankConfig, loadConfig)
 import Yoga.Postgres (withClient, mkPool)
-import Types (IncomingGenre)
+import Types (IncomingGenre(..))
 import Utils (readMigrationFile)
 
 stagingServer :: FilePath 
@@ -25,7 +25,8 @@ main = launchAff_ $ do
   eConfig <- loadConfig $ concat [normalize stagingServer, "conf"]
   case eConfig of 
     Right config -> do
-      migrateUsers config
+      -- migrateUsers config
+      migrateTunes Klezmer config
     Left err -> 
       liftEffect $ log err 
 

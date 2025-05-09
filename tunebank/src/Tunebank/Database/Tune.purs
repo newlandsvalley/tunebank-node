@@ -49,11 +49,13 @@ updateTune genre vAbc c = do
 -- | this is useful in migrating from MusicRest
 insertTuneWithTs :: Genre -> UserName -> TimestampString -> ValidatedAbc -> Client -> Aff String
 insertTuneWithTs genre user timestamp vAbc c = do
+  _ <- liftEffect $ log ("trying to upsert tune with ts using owner " <> (show user))
   let 
     query = "insert into tunes ( title, genre, rhythm, submitter, keysig, composer, origin, source, transcriber, abc, ts) "
             <> " values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 )"
     params = [toSql vAbc.title, toSql genre, toSql vAbc.rhythm, toSql user, toSql vAbc.keysig, toSql vAbc.composer] <>
               [toSql vAbc.origin, toSql vAbc.source, toSql vAbc.transcriber, toSql vAbc.abc, toSql timestamp] 
+  _ <- liftEffect $ log ("query: " <> query)
   _ <- execute (Query query) params c
   pure vAbc.title
 
