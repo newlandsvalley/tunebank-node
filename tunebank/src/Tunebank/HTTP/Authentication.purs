@@ -2,12 +2,16 @@ module Tunebank.HTTP.Authentication
   ( getAuthorization
   , getCredentials
   , parseCredentials
+  , validateCorsOrigin
   , withAdminAuthorization
   , withAnyAuthorization
   ) where
 
 import Prelude
 
+
+import Control.Monad.Reader (class MonadAsk, asks)
+import Data.Array (elem)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (drop, indexOf, splitAt)
@@ -20,6 +24,7 @@ import HTTPurple.Response (Response, unauthorized)
 import StringParser (Parser, ParseError, runParser)
 import StringParser.CodePoints (skipSpaces, regex)
 import Tunebank.Database.User (validateCredentials)
+import Tunebank.Environment (Env)
 import Tunebank.HTTP.Response (customForbidden)
 import Tunebank.Types (Authorization, Credentials, isAdministrator)
 import Yoga.Postgres (Client)
@@ -112,8 +117,22 @@ parseCredentials value =
     hash =
       skipSpaces *> regex "[A-Za-z0-9._~+/-]+=*" <* skipSpaces
 
+defaultOrigin :: String 
+defaultOrigin = 
+  "http://localhost"
 
-   
+-- | validate an HTTP request origin against the allowable CORS origins
+-- | returning either that origin (if valid) or the default if not
+validateCorsOrigin :: forall m. MonadAff m => MonadAsk Env m => Maybe String -> m String
+validateCorsOrigin mOrigin = do 
+  allowedOrigins <- asks _.corsOrigins
+  case mOrigin of  
+    Nothing -> pure defaultOrigin
+    Just origin ->
+      if (elem origin allowedOrigins) then 
+        pure origin
+      else 
+        pure defaultOrigin
 
 
 

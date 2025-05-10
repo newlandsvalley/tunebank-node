@@ -10,6 +10,7 @@ import Yoga.Postgres (Pool, ClientConfig, ConnectionInfo, connectionInfoFromConf
 type Env = { server :: ServerConfig
            , paging :: PagingConfig
            , mail :: MailConfig
+           , corsOrigins :: Array String
            , dbpool :: Pool
            }
 
@@ -19,20 +20,9 @@ buildEnv config = do
   pure $ { server : config.server
          , paging : config.paging
          , mail : config.mail
+         , corsOrigins : config.security.corsOrigins
          , dbpool
          }
-
-{-}
-clientConfig :: ClientConfig
-clientConfig =
-  { host: "localhost"
-  , database: "tunedbtest"
-  , port: 5432
-  , user: "tunebank_api"
-  , password: "Brudmarsch"
-  , ssl: false
-  }
--}
 
 connectionInfo :: ClientConfig -> ConnectionInfo
 connectionInfo clientConfig = 

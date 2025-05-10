@@ -23,6 +23,7 @@ import HTTPurple.Body (RequestBody)
 import HTTPurple.Body (toString) as Body
 import HTTPurple.Headers (RequestHeaders)
 import HTTPurple.Json (jsonHeaders)
+import HTTPurple.Lookup (lookup)
 import HTTPurple.Response (Response, unauthorized)
 import HTTPurple.Routes (catchAll)
 import Routing.Duplex (RouteDuplex', optional, root, segment, string, int)
@@ -36,8 +37,8 @@ import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSea
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
 import Tunebank.Database.User (UserValidity(..), deleteUser, getUserRecord, insertUser, validateUser)
 import Tunebank.Environment (Env)
-import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization)
-import Tunebank.HTTP.Headers (abcHeaders, corsHeadersAllOrigins, midiHeaders, preflightAllOrigins)
+import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
+import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
 import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
@@ -125,29 +126,29 @@ router :: forall m. MonadAff m => MonadAsk Env m => Request Route -> m Response
 router { route: Home } = homeRoute
 router { route: Genres } = genreRoute
 router { route: Rhythms genre } = rhythmRoute genre
-router { route: Tunes _genre, method : Options } = preflightOptionsRoute
+router { route: Tunes _genre, method : Options, headers } = preflightOptionsRoute headers
 router { route: Tunes genre, method : Post, headers, body } = upsertTuneRoute genre headers body
 router { route: Tunes genre } = tunesRoute genre
-router { route: Tune _genre _title, method : Options } = preflightOptionsRoute
+router { route: Tune _genre _title, method : Options, headers } = preflightOptionsRoute headers
 router { route: Tune genre title, method: Delete, headers } = deleteTuneRoute genre title headers
 router { route: Tune genre title } = tuneRoute genre title
 router { route: TuneAbc genre title } = tuneAbcRoute genre title
 router { route: TuneMidi genre title } = tuneMidiRoute genre title
 router { route: Search genre params } = searchRoute genre params 
-router { route: Comments _genre _title, method: Options } = preflightOptionsRoute
+router { route: Comments _genre _title, method: Options, headers } = preflightOptionsRoute headers
 router { route: Comments genre title, method: Post, headers, body } = addCommentRoute genre title headers body
 router { route: Comments genre title, method: Delete, headers } = deleteTuneCommentsRoute genre title headers
 router { route: Comments genre title } = commentsRoute genre title
-router { route: Comment _id, method: Options } = preflightOptionsRoute
+router { route: Comment _id, method: Options, headers } = preflightOptionsRoute headers
 router { route: Comment id, method: Delete, headers } = deleteCommentRoute id headers
 router { route: Comment id, method: Post, headers, body } = updateCommentRoute id body headers 
 router { route: Comment id} = commentRoute id
-router { route: UserCheck, method: Options } = preflightOptionsRoute
+router { route: UserCheck, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserCheck, headers } = checkUserRoute headers
-router { route: Users _params, method: Options } = preflightOptionsRoute
+router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
 router { route: Users _params , method: Post, body } = insertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
-router { route: User _user, method: Options } = preflightOptionsRoute
+router { route: User _user, method: Options, headers } = preflightOptionsRoute headers
 router { route: User user, method: Delete, headers } = deleteUserRoute user headers
 router { route: User user } = userRoute user
 router { route: UserValidate uuid } = validateUserRoute uuid
@@ -222,16 +223,22 @@ tuneMidiRoute genre title = do
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 
   _ <- liftEffect $ logShow "deleteTuneRoute"
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   dbpool :: Pool  <- asks _.dbpool 
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteTune genre title auth.user c
-      either customErrorResponse (const $ ok' corsHeadersAllOrigins "") eResult
+      either customErrorResponse (const $ ok' (corsHeadersOrigin acceptableOrigin) "") eResult
 
 upsertTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> RequestHeaders -> RequestBody -> m Response
 upsertTuneRoute genre headers body = do 
   dbpool :: Pool  <- asks _.dbpool 
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
@@ -241,7 +248,7 @@ upsertTuneRoute genre headers body = do
           customBadRequest error
         Right validatedAbc -> do
           eResult <- upsertTune genre auth validatedAbc c
-          either customErrorResponse (ok' corsHeadersAllOrigins) eResult
+          either customErrorResponse (ok' (corsHeadersOrigin acceptableOrigin) ) eResult
           
 commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 commentsRoute genre title = do 
@@ -260,6 +267,9 @@ addCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> R
 addCommentRoute genre title headers body = do 
   -- _ <- liftEffect $ logShow "addCommentRoute"
   dbpool :: Pool  <- asks _.dbpool 
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   jsonString <- Body.toString body
   {- eNewComment :: Either JsonDecodeError NewComment -}
   case (decodeNewComment jsonString) of
@@ -270,7 +280,7 @@ addCommentRoute genre title headers body = do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
           eResult <- insertComment genre title newComment auth.user c
-          either customErrorResponse (show >>> ok' corsHeadersAllOrigins) eResult
+          either customErrorResponse (show >>> ok' (corsHeadersOrigin acceptableOrigin)) eResult
           
 commentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> m Response
 commentRoute commentId = do 
@@ -288,24 +298,33 @@ commentRoute commentId = do
 deleteCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestHeaders -> m Response
 deleteCommentRoute commentId headers = do 
   dbpool :: Pool  <- asks _.dbpool 
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       eResult <- deleteComment commentId auth c
-      either customErrorResponse (const $ ok' corsHeadersAllOrigins "") eResult
+      either customErrorResponse (const $ ok' (corsHeadersOrigin acceptableOrigin) "") eResult
 
 deleteTuneCommentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneCommentsRoute genre title headers = do 
   dbpool :: Pool  <- asks _.dbpool 
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c
     withAdminAuthorization eAuth $ \_auth -> do
       _result <- deleteComments genre title c
-      ok' corsHeadersAllOrigins ""
+      ok' (corsHeadersOrigin acceptableOrigin) ""
 
 updateCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestBody -> RequestHeaders -> m Response
 updateCommentRoute id body headers = do 
   _ <- liftEffect $ logShow ("update comment " <> show id)
+  let
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
   jsonString <- Body.toString body
   {- eNewComment :: Either JsonDecodeError NewComment -}
   case (decodeNewComment jsonString) of
@@ -317,7 +336,7 @@ updateCommentRoute id body headers = do
         eAuth ::  Either String Authorization <- getAuthorization headers c
         withAnyAuthorization eAuth $ \auth -> do
           eResult <- updateComment id updatedComment auth c
-          either customErrorResponse (show >>> ok' corsHeadersAllOrigins) eResult
+          either customErrorResponse (show >>> ok' (corsHeadersOrigin acceptableOrigin)) eResult
 
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
 usersRoute pagingParams headers = do 
@@ -325,6 +344,9 @@ usersRoute pagingParams headers = do
   _ <- liftEffect $ log ("user paging params: " <> show pagingParams)
   let 
     paginationExpression = buildPaginationExpression pagingParams paging.defaultSize
+    mOrigin = lookup headers "origin"
+  _ <- liftEffect $ log $ "origin: " <> show mOrigin
+  acceptableOrigin <- validateCorsOrigin mOrigin
   dbpool :: Pool  <- asks _.dbpool
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
@@ -332,7 +354,7 @@ usersRoute pagingParams headers = do
       usersPage <- getUserRecordsPage paginationExpression paging.defaultSize c
       let
         json = stringify $ encodeUserRecordsPage usersPage
-      ok'  (jsonHeaders <> corsHeadersAllOrigins) json
+      ok'  (jsonHeaders <> corsHeadersOrigin acceptableOrigin) json
 
 
 checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
@@ -391,9 +413,12 @@ validateUserRoute uuid = do
     validateUser uuid 
   ok' corsHeadersAllOrigins "validated"
 
-preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
-preflightOptionsRoute = do 
-  ok' preflightAllOrigins ""
+preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
+preflightOptionsRoute headers = do 
+  let 
+    mOrigin = lookup headers "origin"
+  acceptableOrigin <- validateCorsOrigin mOrigin
+  ok' (preflightOrigin acceptableOrigin ) ""
 
 routeError :: forall m. MonadAff m => MonadAsk Env m => Array String -> m Response
 routeError paths = do 
