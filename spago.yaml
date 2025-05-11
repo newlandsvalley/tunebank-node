@@ -20,3 +20,6 @@ workspace:
     nodemailer:
       git: https://github.com/srghma/purescript-nodemailer.git
       ref: 07e273a71ee3b8b4685d0015272810f5c6340d7b
+    abc-parser:
+      git: https://github.com/newlandsvalley/purescript-abc-parser.git
+      ref: 40aa24aa8a2fdf9aa6298175554fa4b67b1afbc4

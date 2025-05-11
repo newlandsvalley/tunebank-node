@@ -969,6 +969,10 @@
       }
     },
     "extra_packages": {
+      "abc-parser": {
+        "git": "https://github.com/newlandsvalley/purescript-abc-parser.git",
+        "ref": "40aa24aa8a2fdf9aa6298175554fa4b67b1afbc4"
+      },
       "httpurple": {
         "git": "https://github.com/newlandsvalley/purescript-httpurple.git",
         "ref": "c37b349b0399ab006e808db9e5865fbe890589ad"
@@ -994,9 +998,9 @@
   },
   "packages": {
     "abc-parser": {
-      "type": "registry",
-      "version": "2.0.1",
-      "integrity": "sha256-0kKfG3zGpUwQlHsVpVfRNPji6H/FuLUDI+oZLPc+EQY=",
+      "type": "git",
+      "url": "https://github.com/newlandsvalley/purescript-abc-parser.git",
+      "rev": "40aa24aa8a2fdf9aa6298175554fa4b67b1afbc4",
       "dependencies": [
         "arrays",
         "bifunctors",

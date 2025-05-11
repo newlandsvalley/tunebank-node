@@ -18,7 +18,7 @@ import Data.Validation.Semigroup (V, invalid, toEither)
 import Data.Lens.Fold (firstOf)
 import Data.Lens.Traversal (traversed)
 import Data.String (joinWith)
-import Data.String.Common (toLower)
+import Data.String.Common (toLower, trim)
 import Tunebank.Types (Rhythm(..))
 
 type UnvalidatedAbc  = 
@@ -66,12 +66,12 @@ buildMetadata =
           unvalidatedAbc :: UnvalidatedAbc
           unvalidatedAbc = 
             { title : getTitle abcTune
-            , rhythm : map Rhythm $ firstOf (_headers <<< traversed <<< _Rhythm) abcTune  
+            , rhythm : map Rhythm $ map trim $ firstOf (_headers <<< traversed <<< _Rhythm) abcTune  
             , modifiedKeysig : getKeySig abcTune
-            , composer : firstOf (_headers <<< traversed <<< _Composer) abcTune
-            , origin : firstOf (_headers <<< traversed <<< _Origin) abcTune
-            , source : firstOf (_headers <<< traversed <<< _Source) abcTune
-            , transcriber : firstOf (_headers <<< traversed <<< _Transcription) abcTune
+            , composer : map trim $ firstOf (_headers <<< traversed <<< _Composer) abcTune
+            , origin : map trim $ firstOf (_headers <<< traversed <<< _Origin) abcTune
+            , source : map trim $ firstOf (_headers <<< traversed <<< _Source) abcTune
+            , transcriber : map trim $ firstOf (_headers <<< traversed <<< _Transcription) abcTune
             , abc : abc
             }
         in

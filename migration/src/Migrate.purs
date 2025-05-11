@@ -1,4 +1,9 @@
-module Migrate where
+module Migrate
+  ( main
+  , migrateTunes
+  , stagingServer
+  )
+  where
 
 import Prelude
 
@@ -26,7 +31,10 @@ main = launchAff_ $ do
   case eConfig of 
     Right config -> do
       -- migrateUsers config
-      migrateTunes Klezmer config
+      -- migrateTunes Klezmer config
+      -- migrateTunes English config
+      -- migrateTunes Irish config
+      migrateTunes Scandi config
     Left err -> 
       liftEffect $ log err 
 
