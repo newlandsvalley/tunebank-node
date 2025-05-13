@@ -14,6 +14,7 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Node.Path (FilePath, concat, normalize)
+import Comments (migrateComment, decodeComment)
 import Tunes (migrateTune, decodeTune)
 import Users (arbitrageUser, decodeUser)
 import Tunebank.Environment (connectionInfo)
@@ -34,7 +35,9 @@ main = launchAff_ $ do
       -- migrateTunes Klezmer config
       -- migrateTunes English config
       -- migrateTunes Irish config
-      migrateTunes Scandi config
+      -- migrateTunes Scandi config
+      -- migrateTunes Scottish config
+      migrateComments English config
     Left err -> 
       liftEffect $ log err 
 
@@ -58,6 +61,18 @@ migrateTunes incomingGenre config = do
   dbpool <- liftEffect $ mkPool $ connectionInfo config.db
   withClient dbpool $ \c -> do
     sequence_ $ map (migrateTune incomingGenre c) tuneList
+
+migrateComments :: IncomingGenre -> TunebankConfig -> Aff Unit
+migrateComments incomingGenre config = do
+  let 
+    filename = (show incomingGenre) <> "comments.json"
+  comments <- readMigrationFile $ concat  [normalize stagingServer, "migration", filename]
+  let 
+    commentList = map decodeComment comments 
+
+  dbpool <- liftEffect $ mkPool $ connectionInfo config.db
+  withClient dbpool $ \c -> do
+    sequence_ $ map (migrateComment incomingGenre c) commentList
 
 
 

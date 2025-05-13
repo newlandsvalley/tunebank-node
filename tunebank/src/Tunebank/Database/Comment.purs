@@ -4,7 +4,9 @@ module Tunebank.Database.Comment
   , deleteComment
   , deleteComments
   , updateComment
-  , insertComment ) 
+  , insertComment 
+  , insertCommentWithTs
+  ) 
   
   where
 
@@ -19,7 +21,7 @@ import Yoga.Postgres (Query(Query), Client, query, queryValue, queryOne, execute
 import Yoga.Postgres.SqlValue (toSql)
 
 import Tunebank.Database.Tune (getTuneId)
-import Tunebank.Types (Authorization, Title, UserName(..), Genre, Comment, NewComment, isAdministrator)
+import Tunebank.Types (Authorization, TimestampString, Title, UserName(..), Genre, Comment, NewComment, isAdministrator)
 import Tunebank.Database.Utils (maybeStringResult, read', singleIntResult)
 import Tunebank.HTTP.Response (ResponseError(..))
 
@@ -38,6 +40,29 @@ insertComment genre title comment (UserName user) c = do
       -- _ <- liftEffect $ logShow ("trying to insert tune " <> vAbc.title)
       (mCommentId :: (Maybe Int))  <- queryValue singleIntResult (Query queryText :: Query Int) params c
       pure $ maybe (Left $ InternalServerError "comment insertion seems to have failed") Right mCommentId
+
+
+-- | insert a comment to the database including the timestamp
+-- | this is useful in migrating from MusicRest
+insertCommentWithTs :: Genre -> Title -> NewComment -> UserName -> TimestampString -> Client -> Aff (Either ResponseError Int)
+insertCommentWithTs genre title comment user timestamp c = do
+  -- _ <- liftEffect $ log ("trying to upsert comment with ts using owner " <> (show user))
+  mTuneId <- getTuneId genre title c
+  case mTuneId of 
+    Nothing -> do 
+      pure $ Left $ BadRequest ("Tune not found: " <> show title) 
+    Just tuneId -> do
+      let 
+        query = "insert into comments ( tuneid, subject, comment, submitter, ts) " <>
+                " values ($1, $2, $3, $4, $5 ) returning id"
+        params = [toSql tuneId, toSql comment.subject, toSql comment.text, toSql user, toSql timestamp] 
+      -- _ <- liftEffect $ log ("query: " <> query)
+      mCommentId <-  queryValue singleIntResult  (Query query) params c
+      pure $ maybe (Left $ InternalServerError "comment insertion seems to have failed") Right mCommentId
+
+
+-- upsertCommentWithTs :: Genre -> Title -> NewComment -> UserName -> TimestampString -> Client -> Aff (Either ResponseError Int)
+-- upsertCommentWithTs genre title comment user timestamp c = do
 
 getComments :: Genre -> Title -> Client -> Aff (Either ResponseError (Array Comment))
 getComments genre title  c = do
@@ -61,6 +86,18 @@ getComment commentId c = do
                 "from comments where id = $1"
   mComment <- queryOne read' (Query queryText :: Query Comment ) [toSql commentId] c
   pure $ note (BadRequest $ "Comment not found: " <> (show commentId))  mComment
+
+
+{-}
+getCommentByTimestamp :: Int -> TimestampString -> Client -> Aff (Either ResponseError Comment)
+getCommentByTimestamp tuneId timestamp c = do
+  let 
+    queryText = "select subject, comment as text, submitter, id, " <>
+                " floor(extract (epoch from ts))::integer as timestamp " <>
+                "from comments where tuneid = $1 and ts = $2"
+  mComment <- queryOne read' (Query queryText :: Query Comment ) [toSql tuneId, toSql timestamp] c
+  pure $ note (BadRequest $ "Comment not found for timestamp: " <> timestamp)  mComment
+-}
 
 
 getCommentOwner :: Int -> Client -> Aff (Maybe UserName)

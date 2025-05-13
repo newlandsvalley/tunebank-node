@@ -47,6 +47,7 @@ create table comments (
     comment varchar(1000) not null,
     submitter varchar(100) not null references users(username),
     ts timestamp default current_timestamp,
+    UNIQUE (tuneid, ts),
     FOREIGN KEY(tuneid) REFERENCES tunes(id) ON DELETE CASCADE
 );
 
