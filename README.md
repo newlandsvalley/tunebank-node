@@ -20,6 +20,10 @@ Users need not be registered to be allowed to issue `GET` requests for any tune 
 
 The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/master/URL-SCHEME.md) is somewhat simplified from that of `musicrest`. The number of [differences](https://github.com/newlandsvalley/Tunebank-node/blob/master/DIFFERENCES.md) between the two is fairly small.
 
+## Project Structure
+
+The project is structured as a polyrepo.  The main library module is in the `tunebank` subdirectory with two apps that depend on it - `server` and `migration`. Tests are contained in the server module.
+
 ## Populating the Test Database 
 
 The postgres SQL scripts that initialise the test database include the DDL statements and scripts that populate the genres, rhythms, roles and user tables with essential static data.  These are to be found in the `installation/SQL` directory. These scripts include a file named `dbroles-test.sql` which defines a user name of `test_database_user` with a password of `changeit`. This username is used by the test framework when accessing the database.  
