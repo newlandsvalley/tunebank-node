@@ -7,11 +7,13 @@
     "test": "test"
   },
   "scripts": {
-    "build": "spago build",
-    "test": "spago test",
-    "server": "spago run -p server",
-    "migration": "spago run -p migration -m Migrate",
-    "bundle-server": "spago bundle -p server --bundle-type app --platform node --outfile tunebank.js"
+    "build-server": "cd server && spago build",
+    "server": "cd server && spago run",
+    "bundle-server": "cd server && spago bundle --bundle-type app --platform node --outfile tunebank.js",
+    "build-migration": "cd migration && spago build",
+    "migration": "cd migration && spago run",
+    "bundle-migration": "cd migration && spago bundle --bundle-type app --platform node --outfile migration.js",
+    "test": "cd server && spago test"
   },
   "dependencies": {
     "esbuild": "^0.25.4",

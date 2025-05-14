@@ -1,10 +1,11 @@
 
 
-conf/tunebank.yaml
+migration/conf/tunebank.yaml
+server/conf/tunebank.yaml
 installation/SQL/dbroles.sql
 node_modules/
 server/tunebank.js
-migration/migrate.js
+migration/migration.js
 .pulp-cache/
 output/
 output-es/

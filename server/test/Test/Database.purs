@@ -261,7 +261,7 @@ rebuildDB = do
     -- delete all Scandi tunes
     _ <- deleteAllScandiTunes c
     -- upload the Scandi tunes in the abc-samples directory
-    _ <- uploadTunes (Genre "scandi") "./installation/abc-samples" c
+    _ <- uploadTunes (Genre "scandi") "./test-data/abc-samples" c
     insertTwoComments c
 
 -- to be run before the user tests

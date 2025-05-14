@@ -1,3 +1,23 @@
+workspace:
+  packageSet:
+    registry: 63.9.1
+  extraPackages:  
+    yaml-next:
+      dependencies:
+        - argonaut-codecs
+        - argonaut-core
+        - effect
+        - foreign
+        - functions
+        - ordered-collections
+        - unsafe-coerce
+      git: https://github.com/nsaunders/purescript-yaml-next.git
+      ref: 478e170d26467a63f67fed8c69355aa980049418
+    nodemailer:
+      git: https://github.com/srghma/purescript-nodemailer.git
+      ref: 07e273a71ee3b8b4685d0015272810f5c6340d7b
+    tunebank-node:
+      path: ../tunebank
 package:
   name: migration
   dependencies:

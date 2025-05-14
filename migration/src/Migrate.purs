@@ -1,45 +1,30 @@
 module Migrate
-  ( main
-  , migrateTunes
+  ( migrateTunes
+  , migrateComments
+  , migrateUsers
   , stagingServer
   )
   where
 
+
 import Prelude
 
-import Data.Either (Either(..))
 import Data.Traversable (sequence_)
-import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Effect.Console (log)
 import Node.Path (FilePath, concat, normalize)
 import Comments (migrateComment, decodeComment)
 import Tunes (migrateTune, decodeTune)
 import Users (arbitrageUser, decodeUser)
 import Tunebank.Environment (connectionInfo)
-import Tunebank.Config (TunebankConfig, loadConfig)
+import Tunebank.Config (TunebankConfig)
 import Yoga.Postgres (withClient, mkPool)
-import Types (IncomingGenre(..))
+import Types (IncomingGenre)
 import Utils (readMigrationFile)
 
 stagingServer :: FilePath 
 stagingServer = "/home/john/services/tunebank-node/"
 
-main :: Effect Unit
-main = launchAff_ $ do
-  eConfig <- loadConfig $ concat [normalize stagingServer, "conf"]
-  case eConfig of 
-    Right config -> do
-      -- migrateUsers config
-      -- migrateTunes Klezmer config
-      -- migrateTunes English config
-      -- migrateTunes Irish config
-      -- migrateTunes Scandi config
-      -- migrateTunes Scottish config
-      migrateComments English config
-    Left err -> 
-      liftEffect $ log err 
 
 migrateUsers :: TunebankConfig -> Aff Unit
 migrateUsers config = do

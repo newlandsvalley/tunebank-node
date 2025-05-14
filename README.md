@@ -24,18 +24,19 @@ The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/ma
 
 The postgres SQL scripts that initialise the test database include the DDL statements and scripts that populate the genres, rhythms, roles and user tables with essential static data.  These are to be found in the `installation/SQL` directory. These scripts include a file named `dbroles-test.sql` which defines a user name of `test_database_user` with a password of `changeit`. This username is used by the test framework when accessing the database.  
 
-The `installation/abc-samples` directory contains a set of Scandi tunes in ABC format.  These are reloaded automatically by the test framework at each invocation.
-
 ## Configuration
 
-Configuration is by means of `tunebank.conf` in the `conf` directory.  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
+Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` directory).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
 
-## Building 
+## Building and Running
 
-  * to build - `npm run build`
+  * to build the server - `npm run build-server`
   * to bundle the server - `npm run bundle-server`
+  * to run the server - `npm run server`
 
-## Testing
+  * to build the migration utility - `npm run build-migration`
+  * to bundle the migration utility - `npm run bundle-migration`
+  * to run the migration utility - `npm run migration`  
 
 ### Setup
 
@@ -44,25 +45,28 @@ Configuration is by means of `tunebank.conf` in the `conf` directory.  This is p
   * Run the SQL scripts in alphabetical order.
   * Run up the `tunebank-node` server (required for the integration tests) - `npm run server`.
 
+## Testing
+
+The `server/testdata/abc-samples` directory contains a set of Scandi tunes in ABC format.  These are reloaded automatically by the test framework at each invocation.
+
 ### Running the Tests
 
-  * Run the tests - `spago test`.
+  * Run up a server in a different window (required by the integration tests).
+  * Run the tests - `npm run test`.
   * Check the server log for mail confirmation.  This should establish that a user registration message has been sent to an ethereal url which you can then inspect.
 
 ## Production
 
 ### Security
 
-Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a production version of `dbroles-test.sql` with a production user name and password and provide a production version of `tunebank.conf` which uses these production names and passwords. In addition, you will need to use your own SMTP service.
+Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a version of `dbroles-test.sql` perhaps named `dbtoles-production.sql` with your own database user name and password and provide a version of `tunebank.conf` which uses this names and password. In addition, you will need to use your own SMTP service and configure it appropriately.
 
-Once you have these, make your own copy of `tunebank.conf` and edit this to provide the appropriate connections to your database and email service.
+### Running the Production Server
 
-### Running the Server
-
-  * Bundle the app into a single file `index.js` using `npm run bundle-server`.
+  * Bundle the app into a single file `tunebank.js` using `npm run bundle-server`.
   * Create a home directory to house your server and copy index.js to it.
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
-  * Run using `node .` or run `npm run server`.
+  * Run using `node .`.
 
 ## Migration from Musicrest
 
