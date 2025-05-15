@@ -67,22 +67,25 @@ Once you have successfully run the tests, you are in a position to install a pro
 
 ### Running the Production Server
 
+  * Ensure node is installed on your production server
   * Bundle the app into a single file `tunebank.js` using `npm run bundle-server`.
-  * Create a home directory to house your server and copy index.js to it.
+  * Create a home directory to house your server and copy tunebank.js to it.
+  * Make it executable - `chmod 777 tunebank.js`
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
-  * Run using `node .`.
+  * Run using `./tunebank.js`.
+  * (You can then set up appropriate scripting for running as a background service)
 
 ## Migration from Musicrest
 
-The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server. To use this, first bundle the migration package - `npm run bundle-migration` which produces a runnable javascript file - `migrate.js` and copy this to the home directory of your production server.  Also copy the bash script `migrate.sh`
+The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server. To use this, first bundle the migration package - `npm run bundle-migration` which produces a runnable javascript file - `migrate.js` and copy this to the home directory of your production server and make itn an executable.
 
 Migration assumes the same subdirectory - `conf` that the server relies on.  It also requires a directory named `migration` where the files exported from Musicrest live. 
 
 Migration uses a naturalistic command line.  For example:
 
-  * .\migrate.sh users 
-  * .\migrate.sh english tunes 
-  * .\migrate.sh scandi comments
+  * .\migrate.js users 
+  * .\migrate.js english tunes 
+  * .\migrate.js scandi comments
 
 
 
