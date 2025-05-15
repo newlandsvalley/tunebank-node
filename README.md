@@ -74,8 +74,16 @@ Once you have successfully run the tests, you are in a position to install a pro
 
 ## Migration from Musicrest
 
-The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server.  (The details of these servers are not available to github.)
+The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server. To use this, first bundle the migration package - `npm run bundle-migration` which produces a runnable javascript file - `migrate.js` and copy this to the home directory of your production server.  Also copy the bash script `migrate.sh`
 
-To migrate - `npm run migration`.
+Migration assumes the same subdirectory - `conf` that the server relies on.  It also requires a directory named `migration` where the files exported from Musicrest live. 
+
+Migration uses a naturalistic command line.  For example:
+
+  * .\migrate.sh users 
+  * .\migrate.sh english tunes 
+  * .\migrate.sh scandi comments
+
+
 
 

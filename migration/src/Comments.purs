@@ -9,16 +9,14 @@ import Data.Bifunctor (bimap)
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Data.String (length)
-import Data.String.Utils (startsWith)
 import Effect.Aff (Aff, catchError)
 import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
-import Effect.Exception (Error)
 import Tunebank.Database.Comment (insertCommentWithTs)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Types (Genre(..), Title(..), UserName(..))
-import Types (IncomingGenre)
-import Utils (mongoObjectIdToDate)
+import Args.Types (IncomingGenre)
+import Utils (handleException, mongoObjectIdToDate)
 import Yoga.Postgres (Client)
 
 
@@ -92,18 +90,6 @@ migrateComment' incomingGenre musicrestComment c = do
       catchError 
         (insertCommentWithTs genre (Title title) comment (UserName musicrestComment.submitter) timestamp c)
         handleException 
-
-  where 
-
-    handleException :: Error -> Aff (Either ResponseError Int)
-    handleException err = do
-      let 
-        errorText = show err 
-      if (startsWith  "error: duplicate key value violates unique constraint" errorText) then 
-        pure $ Left $ BadRequest "skipping comment which has already been inserted"
-      else do
-        liftEffect $ log errorText
-        pure $ Left $ BadRequest "skipping comment which is in error"
 
 
 

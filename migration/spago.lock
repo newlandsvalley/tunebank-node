@@ -6,6 +6,7 @@
         "core": {
           "dependencies": [
             "formatters",
+            "string-parsers",
             "tunebank-node"
           ],
           "build_plan": [

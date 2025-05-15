@@ -20,7 +20,7 @@ import Effect.Console (log, logShow)
 import Tunebank.HTTP.Response (ResponseError)
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Types (Genre(..), Role(..), UserName(..))
-import Types (IncomingGenre)
+import Args.Types (IncomingGenre)
 import Utils (mongoTsToDateTimeString)
 import Yoga.Postgres (Client)
 

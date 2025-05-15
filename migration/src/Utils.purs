@@ -1,5 +1,6 @@
 module Utils 
-  ( readMigrationFile
+  ( handleException
+  , readMigrationFile
   , mongoObjectIdToDate
   , mongoTsToDateTimeString
   ) where
@@ -7,19 +8,21 @@ module Utils
 import Prelude
 
 import Data.Maybe (maybe, fromMaybe)
-import Data.Either (either)
+import Data.Either (Either(..), either)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Int (fromStringAs, hexadecimal, toNumber)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Formatter.DateTime (formatDateTime)
+import Data.String.Utils (lines, startsWith)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
+import Effect.Exception (Error)
 import Data.String (take)
-import Data.String.Utils (lines)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
 import Node.Path (FilePath)
+import Tunebank.HTTP.Response (ResponseError(..))
 
 readMigrationFile :: FilePath -> Aff (Array String)
 readMigrationFile filePath = do
@@ -46,3 +49,16 @@ mongoObjectIdToDate oid =
     decodeObjectId :: Int
     decodeObjectId = 
       fromMaybe 0 $ fromStringAs hexadecimal $ take 8 oid
+
+
+handleException :: forall r.Error -> Aff (Either ResponseError r)
+handleException err = do
+  let 
+    errorText = show err 
+  if (startsWith  "error: duplicate key value violates unique constraint" errorText) then 
+    pure $ Left $ BadRequest "skipping entry which has already been inserted"
+  else do
+    liftEffect $ log errorText
+    pure $ Left $ BadRequest "skipping entry which is in error"
+
+

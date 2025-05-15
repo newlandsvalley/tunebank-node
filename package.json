@@ -12,7 +12,7 @@
     "bundle-server": "cd server && spago bundle --bundle-type app --platform node --outfile tunebank.js",
     "build-migration": "cd migration && spago build",
     "migration": "cd migration && spago run",
-    "bundle-migration": "cd migration && spago bundle --bundle-type app --platform node --outfile migration.js",
+    "bundle-migration": "cd migration && spago bundle --bundle-type app --platform node --outfile migrate.js",
     "test": "cd server && spago test"
   },
   "dependencies": {

@@ -15,11 +15,12 @@ import Data.Maybe (Maybe)
 import Data.String (length)
 import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, catchError)
 import Tunebank.Database.User (UserValidity(..), insertUser)
 import Tunebank.HTTP.Response (ResponseError)
 import Tunebank.Types (NewUser)
 import Yoga.Postgres (Client)
+import Utils (handleException)
 
 type MusicrestUser = 
   { name :: String 
@@ -80,5 +81,7 @@ migrateUser musicrestUser c = do
       , email : musicrestUser.email
       , password : musicrestUser.password
       }
-  insertUser newUser Prevalidated c
+  catchError 
+    (insertUser newUser Prevalidated c)
+    handleException 
 
