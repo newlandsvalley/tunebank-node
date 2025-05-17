@@ -5,6 +5,7 @@
         "path": "./",
         "core": {
           "dependencies": [
+            "logging-journald",
             "tunebank-node"
           ],
           "build_plan": [
@@ -50,6 +51,8 @@
             "lcg",
             "lists",
             "literals",
+            "logging",
+            "logging-journald",
             "maybe",
             "midi",
             "newtype",
@@ -92,6 +95,7 @@
             "string-parsers",
             "strings",
             "stringutils",
+            "systemd-journald",
             "tailrec",
             "transformers",
             "tunebank-node",
@@ -1463,6 +1467,31 @@
         "unsafe-coerce"
       ]
     },
+    "logging": {
+      "type": "registry",
+      "version": "3.0.0",
+      "integrity": "sha256-qEwoXTujvHH1qGBSK2oT8RryLVpMKDHMMorryv01F7M=",
+      "dependencies": [
+        "console",
+        "contravariant",
+        "effect",
+        "either",
+        "prelude",
+        "transformers",
+        "tuples"
+      ]
+    },
+    "logging-journald": {
+      "type": "registry",
+      "version": "0.4.0",
+      "integrity": "sha256-laYABfyQ7EkeeJTnBIEvDlz+VrkrsC//umczEkNPi3I=",
+      "dependencies": [
+        "effect",
+        "logging",
+        "prelude",
+        "systemd-journald"
+      ]
+    },
     "maybe": {
       "type": "registry",
       "version": "6.0.0",
@@ -2243,6 +2272,16 @@
         "strings"
       ]
     },
+    "systemd-journald": {
+      "type": "registry",
+      "version": "0.3.0",
+      "integrity": "sha256-rXqM3RvRYvla0ITPb+/lqxl4RAMPofdu4Ym4qX0B1YU=",
+      "dependencies": [
+        "console",
+        "functions",
+        "prelude"
+      ]
+    },
     "tailrec": {
       "type": "registry",
       "version": "6.1.0",
@@ -2292,6 +2331,7 @@
         "foldable-traversable",
         "httpurple",
         "integers",
+        "logging-journald",
         "newtype",
         "node-buffer",
         "node-fs",
@@ -2301,6 +2341,7 @@
         "prelude",
         "string-parsers",
         "strings",
+        "systemd-journald",
         "validation",
         "yaml-next",
         "yoga-postgres"

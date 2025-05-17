@@ -9,6 +9,7 @@ package:
     - foldable-traversable
     - httpurple
     - integers
+    - logging-journald
     - newtype
     - node-fs
     - node-buffer
@@ -18,6 +19,7 @@ package:
     - string-parsers
     - strings
     - ordered-collections
+    - systemd-journald
     - validation
     - yaml-next
     - yoga-postgres

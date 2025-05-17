@@ -2,12 +2,15 @@ module Main where
 
 import Prelude
 
-import Control.Monad.Reader (runReaderT)
+
+import Control.Logger (log) as Journal
+import Control.Monad.Reader (runReaderT, asks)
+import Control.Logger.Journald (Level(Info), logger)
 import Data.Either (Either(..))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
-import Effect.Console (log)
+import Effect.Console (log) as Console
 import HTTPurple (serve')
 
 import Tunebank.HTTP.Route (route, router)
@@ -25,22 +28,25 @@ main = launchAff_ do
       _ <- runServer config
       pure unit
     Left err -> 
-      liftEffect $ log err 
+      liftEffect $ Console.log err 
 
 
 -- | Boot up the server
 runServer :: TunebankConfig -> ServerAffM
 runServer config = do
-  env <- liftEffect $ buildEnv config
+  env <- liftEffect $ buildEnv config  
+  _ <- liftEffect $ Journal.log (logger env.journal) 
+         { level: Info, message: ("Tunebank server starting on port " <> show env.server.port), fields: {} }
+
   liftEffect $ serve' (\a -> runReaderT a env ) { hostname: config.server.host , port: config.server.port, onStarted } { route, router }
   where
   onStarted = do
-    log " ┌───────────────────────────────────────┐"
-    log " │ Server now up on port 8080            │"
-    log " │                                       │"
-    log " │ To test, run:                         │"
-    log " │  > curl -v localhost:8080             │"
-    log " │    # => tunebank 0.0.1                │"
-    log " └───────────────────────────────────────┘"
+    Console.log " ┌───────────────────────────────────────┐"
+    Console.log " │ Server now up on port 8080            │"
+    Console.log " │                                       │"
+    Console.log " │ To test, run:                         │"
+    Console.log " │  > curl -v localhost:8080             │"
+    Console.log " │    # => tunebank 0.0.1                │"
+    Console.log " └───────────────────────────────────────┘"
 
 

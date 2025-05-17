@@ -32,7 +32,29 @@ The postgres SQL scripts that initialise the test database include the DDL state
 
 Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` directory).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
 
+## Logging
+
+Logging is to `journald` aka `systemd-journald`.  This centralised Unix logging mechanism can be queried by means of `journalctl`.  For example, on my Ubuntu system, I can find all messages logged by tunebank using `journalctl -t tunebanl-server`.
+
+Note that in order to enable logging, it is first necessary to install `libsystemd`.  On Debian-flavoured Unix, this is achieved by:
+
+```
+sudo apt-get install build-essential pkg-config libsystemd-dev
+```
+
+Note also that when installing the node `systemd` package, you will receive a warning (which may be ignored):
+
+```
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'systemd@0.4.0',
+npm warn EBADENGINE   required: { node: '>=0.6.11 <0.11.0' },
+npm warn EBADENGINE   current: { node: 'v23.6.1', npm: '10.9.2' }
+npm warn EBADENGINE }
+```
+
 ## Building and Running
+
+  * Install libsystemd and all the npm dependencies
 
   * to build the server - `npm run build-server`
   * to bundle the server - `npm run bundle-server`

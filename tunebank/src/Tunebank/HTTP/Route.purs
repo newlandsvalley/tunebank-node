@@ -7,6 +7,8 @@ module Tunebank.HTTP.Route
 
 import Prelude hiding ((/))
 
+import Control.Logger (log) as Journal
+import Control.Logger.Journald (Level(Info), logger)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Argonaut (printJsonDecodeError, stringify)
 import Data.Array (intercalate)
@@ -361,9 +363,16 @@ checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m 
 checkUserRoute headers = do 
   _ <- liftEffect $ log "checkUserRoute"
   dbpool :: Pool  <- asks _.dbpool
+  journal <- asks _.journal
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
     _ <- liftEffect $ logShow eAuth
+    case eAuth of 
+      Right auth -> do
+        liftEffect $ Journal.log (logger journal) 
+             { level: Info, message: ("Login for " <> show auth.user), fields: {} }
+      Left _ -> 
+        pure unit
     either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth
 
 userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> m Response

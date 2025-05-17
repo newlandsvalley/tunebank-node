@@ -28,6 +28,7 @@ package:
   name: server
   dependencies:
     - tunebank-node
+    - logging-journald
   test:
     main: Test.Main
     dependencies:
