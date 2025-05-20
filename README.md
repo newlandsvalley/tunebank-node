@@ -109,6 +109,10 @@ Migration uses a naturalistic command line.  For example:
   * .\migrate.js english tunes 
   * .\migrate.js scandi comments
 
+## Export as JSON
+
+Excellent facilities exist within postgres to export data as rows of JSON records.  The `export` directory contains example scripts that can be run via `psql` and which respectively export users, Scandi tunes and Scandi comments.  These can be used to export all tunebank data in a format suitable for later import.
+
 
 
 

@@ -51,6 +51,11 @@ create table comments (
     FOREIGN KEY(tuneid) REFERENCES tunes(id) ON DELETE CASCADE
 );
 
+CREATE VIEW tunecomments AS 
+  SELECT t.genre, t.title, c.subject, c.comment, c.submitter, c.ts  
+  FROM tunes t, comments c 
+  WHERE t.id = c.tuneid;
+
 create index rhythm_idx ON tunes (genre, rhythm);
 create index keysig_idx ON tunes (genre, keysig);
 create index tuneid_idx ON comments (tuneid);
