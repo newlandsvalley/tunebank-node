@@ -5,6 +5,7 @@
         "path": "./",
         "core": {
           "dependencies": [
+            "args-parser",
             "formatters",
             "logging-journald",
             "string-parsers",
@@ -17,6 +18,7 @@
             "argonaut-codecs",
             "argonaut-core",
             "argonaut-traversals",
+            "args-parser",
             "arraybuffer-types",
             "arrays",
             "assert",
@@ -657,6 +659,9 @@
       }
     },
     "extra_packages": {
+      "args-parser": {
+        "path": "../args-parser"
+      },
       "nodemailer": {
         "git": "https://github.com/srghma/purescript-nodemailer.git",
         "ref": "07e273a71ee3b8b4685d0015272810f5c6340d7b"
@@ -788,6 +793,16 @@
         "argonaut-codecs",
         "argonaut-core",
         "profunctor-lenses"
+      ]
+    },
+    "args-parser": {
+      "type": "local",
+      "path": "../args-parser",
+      "dependencies": [
+        "console",
+        "effect",
+        "prelude",
+        "string-parsers"
       ]
     },
     "arraybuffer-types": {

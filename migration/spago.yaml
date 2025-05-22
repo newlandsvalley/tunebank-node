@@ -16,11 +16,14 @@ workspace:
     nodemailer:
       git: https://github.com/srghma/purescript-nodemailer.git
       ref: 07e273a71ee3b8b4685d0015272810f5c6340d7b
+    args-parser: 
+      path: ../args-parser
     tunebank-node:
       path: ../tunebank
 package:
   name: migration
   dependencies:
+    - args-parser
     - formatters
     - logging-journald
     - string-parsers
