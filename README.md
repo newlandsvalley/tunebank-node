@@ -22,7 +22,7 @@ The RESTful [URL Scheme](https://github.com/newlandsvalley/Tunebank-node/blob/ma
 
 ## Project Structure
 
-The project is structured as a polyrepo.  The main library module is in the `tunebank` subdirectory with two apps that depend on it - `server` and `migration`. Tests are contained in the server module.
+The project is structured as a polyrepo.  The main library module is in the `tunebank` subdirectory with three apps that depend on it - `server`, `migration` and `importation`. Tests are contained in the server module. There is also a small library module for parsing command-line arguments - `arg-parser` - shared by the migration and importation modules. Export is handled simply by using postgres psql scripts.
 
 ## Populating the Test Database 
 
