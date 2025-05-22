@@ -1,0 +1,27 @@
+server:
+  host: localhost
+  port: 8080
+
+db:
+  host: localhost
+  database: tunedbtest
+  port: 5432
+  user: test_database_user
+  password: changeit
+  ssl: false
+
+paging: 
+  defaultSize: 15
+
+mail:
+  host: smtp.ethereal.email
+  port: 587
+  secure: false
+  auth: 
+    user: vicente.heaney@ethereal.email
+    pass: 9vxCBDUfQCbE124peF
+
+security:
+  corsOrigins: 
+    - http://localhost:9000"
+    - http://foreignserver.com"

@@ -62,7 +62,9 @@ npm warn EBADENGINE }
 
   * to build the migration utility - `npm run build-migration`
   * to bundle the migration utility - `npm run bundle-migration`
-  * to run the migration utility - `npm run migration`  
+
+  * to build the importation utility - `npm run build-importation`
+  * to bundle the importation utility - `npm run bundle-importation`
 
 ### Setup
 
@@ -99,7 +101,7 @@ Once you have successfully run the tests, you are in a position to install a pro
 
 ## Migration from Musicrest
 
-The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server. To use this, first bundle the migration package - `npm run bundle-migration` which produces a runnable javascript file - `migrate.js` and copy this to the home directory of your production server and make itn an executable.
+The migration package handles migration from Musicrest. Musicrest exports users, comments and tunes as rows of JSON in a proprietary format.  The migration package then loads this data into a staging or production server. To use this, first bundle the migration package - `npm run bundle-migration` which produces a runnable javascript file - `migrate.js` and copy this to the home directory of your production server and make it an executable.
 
 Migration assumes the same subdirectory - `conf` that the server relies on.  It also requires a directory named `migration` where the files exported from Musicrest live. 
 
@@ -112,6 +114,20 @@ Migration uses a naturalistic command line.  For example:
 ## Export as JSON
 
 Excellent facilities exist within postgres to export data as rows of JSON records.  The `export` directory contains example scripts that can be run via `psql` and which respectively export users, Scandi tunes and Scandi comments.  These can be used to export all tunebank data in a format suitable for later import.
+
+The only downside is that postgres prefaces escape sequences such as `"\n"` with a further backslash.  This particularly affects tune ABC and comments and has to be cleaned up by the importer.
+
+## Import of exported JSON files
+
+Import (of previously exported JSON files) is similar to migration. First bundle the importation package - `npm run bundle-importation` which produces a runnable javascript file - `import.js` and copy this to the home directory of your production server and make it an executable.
+
+Again, exportation assumes the same subdirectory - `conf` that the server relies on.  It also requires a directory named `export` where the files previously exported from Tunebank live. 
+
+As for migration, it uses a naturalistic command line.  For example:
+
+  * .\import.js users 
+  * .\import.js english tunes 
+  * .\import.js scandi comments
 
 
 

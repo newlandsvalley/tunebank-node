@@ -10,7 +10,7 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import Migrate (migrateComments, migrateTunes, migrateUsers)
+import Import (importComments, importTunes, importUsers)
 import Node.Process (argv)
 import Tunebank.Config (loadConfig)
 
@@ -18,14 +18,14 @@ main :: Effect Unit
 main = do
   args :: Array String <- argv
   let 
-    -- drop node and path to migrate.js
+    -- drop node and path to import.js
     argLine = intercalate " " $ drop 2 args
   _ <- log $ "args are: " <> argLine
   case (parse argLine) of 
     Left _ -> 
       log showHint 
     Right target -> 
-      runMigration target
+      runImportation target
 
 showHint :: String 
 showHint = 
@@ -44,20 +44,21 @@ showHint =
     "\r\n" <>
     "This should be run from the home directory of your tunebank server " <>
     "and expects subdirectories of conf (tunebank configuration) and " <>
-    "migration (Json format files exported from Musicrest's MongoDB)."
+    "export (Json format files exported earlier from Tunebank)."
 
-runMigration :: Target -> Effect Unit
-runMigration target = launchAff_ $ do
+runImportation :: Target -> Effect Unit
+runImportation target = launchAff_ $ do
   eConfig <- loadConfig "conf"
+  -- eConfig <- loadConfig $ concat [normalize stagingServer, "conf"]
   case eConfig of 
     Right config -> do
       case target of 
         Users -> 
-          migrateUsers config
+          importUsers config
         Tunes genre -> 
-          migrateTunes genre config
+          importTunes genre config
         Comments genre -> 
-          migrateComments genre config
+          importComments genre config
     Left err -> 
       liftEffect $ log err 
 

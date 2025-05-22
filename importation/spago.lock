@@ -1,12 +1,11 @@
 {
   "workspace": {
     "packages": {
-      "migration": {
+      "importation": {
         "path": "./",
         "core": {
           "dependencies": [
             "formatters",
-            "logging-journald",
             "string-parsers",
             "tunebank-node"
           ],
