@@ -35,8 +35,10 @@ main = launchAff_ do
 runServer :: TunebankConfig -> ServerAffM
 runServer config = do
   env <- liftEffect $ buildEnv config  
+  _ <-liftEffect $ Console.log "about to log startup message to journal"
   _ <- liftEffect $ Journal.log (logger env.journal) 
          { level: Info, message: ("Tunebank server starting on port " <> show env.server.port), fields: {} }
+  _ <- liftEffect $ Console.log "startup message logged"
 
   liftEffect $ serve' (\a -> runReaderT a env ) { hostname: config.server.host , port: config.server.port, onStarted } { route, router }
   where

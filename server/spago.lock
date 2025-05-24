@@ -6,6 +6,7 @@
         "core": {
           "dependencies": [
             "logging-journald",
+            "systemd-journald",
             "tunebank-node"
           ],
           "build_plan": [

@@ -1,6 +1,7 @@
 module Tunebank.Environment where
 
 import Prelude
+import Effect.Console (log) as Console
 import Control.Logger.Journald.Types (JournaldLogger)
 import Control.Logger.Journald (logger)
 import Effect (Effect)
@@ -18,10 +19,15 @@ type Env = { server :: ServerConfig
            , journal :: Journald
            }
 
+syslogIdentifier :: String 
+syslogIdentifier = "tunebank-server"
+
 buildEnv :: TunebankConfig -> Effect Env 
 buildEnv config = do
   dbpool <- mkPool $ connectionInfo config.db
-  journal <- journald { syslog_identifier: "tunebank-server" }
+  _ <- Console.log "attempting to set up journal"
+  journal <- journald { syslog_identifier: syslogIdentifier }
+  _ <- Console.log $ "journal syslog_identifier set to " <> syslogIdentifier
   pure $ { server : config.server
          , paging : config.paging
          , mail : config.mail
