@@ -2,13 +2,10 @@ module Tunebank.Environment where
 
 import Prelude
 import Effect.Console (log) as Console
-import Control.Logger.Journald.Types (JournaldLogger)
-import Control.Logger.Journald (logger)
 import Effect (Effect)
-import Node.Systemd.Journald (Journald, journald)
 import Tunebank.Config (TunebankConfig, MailConfig, PagingConfig, ServerConfig)
+import Tunebank.Logging.Winston (Logger, createLogger)
 import Yoga.Postgres (Pool, ClientConfig, ConnectionInfo, connectionInfoFromConfig, defaultPoolConfig, mkPool)
-
 
 -- | A type to hold the environment for our ReaderT
 type Env = { server :: ServerConfig
@@ -16,24 +13,19 @@ type Env = { server :: ServerConfig
            , mail :: MailConfig
            , corsOrigins :: Array String
            , dbpool :: Pool
-           , journal :: Journald
+           , logger :: Logger
            }
-
-syslogIdentifier :: String 
-syslogIdentifier = "tunebank-server"
 
 buildEnv :: TunebankConfig -> Effect Env 
 buildEnv config = do
   dbpool <- mkPool $ connectionInfo config.db
-  _ <- Console.log "attempting to set up journal"
-  journal <- journald { syslog_identifier: syslogIdentifier }
-  _ <- Console.log $ "journal syslog_identifier set to " <> syslogIdentifier
+  logger <- createLogger config.logging.dir
   pure $ { server : config.server
          , paging : config.paging
          , mail : config.mail
          , corsOrigins : config.security.corsOrigins
          , dbpool
-         , journal
+         , logger
          }
 
 connectionInfo :: ClientConfig -> ConnectionInfo

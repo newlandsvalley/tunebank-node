@@ -7,8 +7,6 @@ module Tunebank.HTTP.Route
 
 import Prelude hiding ((/))
 
-import Control.Logger (log) as Journal
-import Control.Logger.Journald (Level(Info), logger)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Argonaut (printJsonDecodeError, stringify)
 import Data.Array (intercalate)
@@ -43,6 +41,7 @@ import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, w
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
 import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
+import Tunebank.Logging.Winston (logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
@@ -363,14 +362,14 @@ checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m 
 checkUserRoute headers = do 
   _ <- liftEffect $ log "checkUserRoute"
   dbpool :: Pool  <- asks _.dbpool
-  journal <- asks _.journal
+  logger <- asks _.logger
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
     _ <- liftEffect $ logShow eAuth
     case eAuth of 
       Right auth -> do
-        liftEffect $ Journal.log (logger journal) 
-             { level: Info, message: ("Login for " <> show auth.user), fields: {} }
+        liftEffect $ logInfo logger $ "login for " <> show auth.user
+        pure unit
       Left _ -> 
         pure unit
     either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth

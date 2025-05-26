@@ -1,8 +1,8 @@
 {
   "name": "tunebank-node",
   "version": "0.0.1",
+  "type": "module",
   "description": "web server for ABC notation music",
-  "main": "index.js",
   "directories": {
     "test": "test"
   },
@@ -21,8 +21,8 @@
     "js-yaml": "^4.1.0",
     "nodemailer": "^6.10.1",
     "pg": "^8.14.1",
-    "systemd": "^0.4.0",
-    "systemd-journald": "^1.5.2"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "purescript": "^0.15.15",

@@ -25,6 +25,5 @@ package:
   dependencies:
     - args-parser
     - formatters
-    - logging-journald
     - string-parsers
     - tunebank-node

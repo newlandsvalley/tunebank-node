@@ -1,15 +1,17 @@
 
 
 migration/conf/tunebank.yaml
+importation/conf/tunebank.yaml
 server/conf/tunebank.yaml
 installation/SQL/dbroles.sql
 node_modules/
 server/tunebank.js
-server/journal_*
+server/logs/*.log
+server/logs/*-audit.json
 importation/import.js
-importation/journal_*
+importation/logs/*.log
 migration/migrate.js
-migration/journal_*
+migration/logs/*.log
 .pulp-cache/
 output/
 output-es/

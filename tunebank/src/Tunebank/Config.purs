@@ -1,8 +1,8 @@
 module Tunebank.Config 
   ( ServerConfig
   , PagingConfig
-  --, MailAuth
   , MailConfig
+  , LoggingConfig
   , SecurityConfig
   , TunebankConfig
   , loadConfig
@@ -46,6 +46,8 @@ type MailConfig =
   , auth :: NM.AuthConfig
   }
 
+type LoggingConfig = 
+  { dir :: String }
 
 type SecurityConfig = 
   { corsOrigins:: Array String }
@@ -55,6 +57,7 @@ type TunebankConfig =
   , db :: Postgres.ClientConfig 
   , paging :: PagingConfig
   , mail :: MailConfig
+  , logging :: LoggingConfig
   , security :: SecurityConfig
   }
 

@@ -2,10 +2,7 @@ module Main where
 
 import Prelude
 
-
-import Control.Logger (log) as Journal
-import Control.Monad.Reader (runReaderT, asks)
-import Control.Logger.Journald (Level(Info), logger)
+import Control.Monad.Reader (runReaderT)
 import Data.Either (Either(..))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
@@ -16,6 +13,7 @@ import HTTPurple (serve')
 import Tunebank.HTTP.Route (route, router)
 import Tunebank.Config (TunebankConfig, loadConfig)
 import Tunebank.Environment (buildEnv)
+import Tunebank.Logging.Winston (logInfo)
 
 type ServerAffM = Aff (Effect Unit -> Effect Unit)
 
@@ -35,10 +33,7 @@ main = launchAff_ do
 runServer :: TunebankConfig -> ServerAffM
 runServer config = do
   env <- liftEffect $ buildEnv config  
-  _ <-liftEffect $ Console.log "about to log startup message to journal"
-  _ <- liftEffect $ Journal.log (logger env.journal) 
-         { level: Info, message: ("Tunebank server starting on port " <> show env.server.port), fields: {} }
-  _ <- liftEffect $ Console.log "startup message logged"
+  _ <- liftEffect $ logInfo env.logger "Tunebank starting"
 
   liftEffect $ serve' (\a -> runReaderT a env ) { hostname: config.server.host , port: config.server.port, onStarted } { route, router }
   where

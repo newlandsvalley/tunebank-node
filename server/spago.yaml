@@ -28,8 +28,6 @@ package:
   name: server
   dependencies:
     - tunebank-node
-    - logging-journald
-    - systemd-journald
   test:
     main: Test.Main
     dependencies:

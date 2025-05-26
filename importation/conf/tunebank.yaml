@@ -21,6 +21,9 @@ mail:
     user: vicente.heaney@ethereal.email
     pass: 9vxCBDUfQCbE124peF
 
+logging: 
+  dir: logs
+
 security:
   corsOrigins: 
     - http://localhost"
