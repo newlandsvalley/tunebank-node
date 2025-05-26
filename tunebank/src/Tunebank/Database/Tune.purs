@@ -169,7 +169,7 @@ getTuneMetadata genre title c = do
 
 getTuneAbc :: Genre -> Title -> Client -> Aff (Maybe String)
 getTuneAbc genre title c = do
-  _ <- liftEffect $ logShow ("trying to get abc for tune " <> show title)
+  _ <- liftEffect $ logShow ("trying to get abc for tune " <> show title <> " and genre " <> show genre)
   let 
     queryText = "select abc from tunes where genre = $1 and title = $2 "    
     params = [toSql genre, toSql title]

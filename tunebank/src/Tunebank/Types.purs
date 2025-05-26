@@ -31,6 +31,7 @@ import Data.Either (note)
 import Data.Argonaut.Encode.Class (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson, decodeJson)
 import Data.Argonaut.Decode.Error (JsonDecodeError(..))
+import Data.String.Common (toLower)
 import HTTPurple.Body (class Body, defaultHeaders, write)
 import Yoga.Postgres.SqlValue (class IsSqlValue, toSql)
 
@@ -110,18 +111,18 @@ derive instance newtypeGenre :: Newtype Genre _
 derive newtype instance eqGenre :: Eq Genre
 derive newtype instance ordGenre :: Ord Genre
 instance showGenre :: Show Genre where
-  show (Genre s) = s
+  show (Genre s) = toLower s
 
 instance sqlValueGenre :: IsSqlValue Genre where
-  toSql (Genre r) = toSql r
+  toSql (Genre r) = toSql $ toLower r
 
 instance encodeJsonGenre :: EncodeJson Genre where
-  encodeJson (Genre r) = encodeJson r
+  encodeJson (Genre s) = encodeJson $ toLower s
 
 instance decodeJsonGenre :: DecodeJson Genre where
   decodeJson json = do
     string <- decodeJson json
-    note (TypeMismatch "Genre") (Just $ Genre string)
+    note (TypeMismatch "Genre") (Just $ Genre $ toLower string)
 
 newtype Rhythm = Rhythm String
 
