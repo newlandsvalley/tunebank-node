@@ -41,7 +41,7 @@ import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, w
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
 import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logging.Winston (logInfo)
+import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
@@ -370,7 +370,8 @@ checkUserRoute headers = do
       Right auth -> do
         liftEffect $ logInfo logger $ "login for " <> show auth.user
         pure unit
-      Left _ -> 
+      Left err -> do
+        liftEffect $ logError logger $ "login failure " <> show err
         pure unit
     either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth
 

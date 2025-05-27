@@ -11,13 +11,15 @@ import Prelude
 
 
 import Control.Monad.Reader (class MonadAsk, asks)
-import Data.Array (elem)
+import Data.Array (elem, intercalate)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (drop, indexOf, splitAt)
 import Data.String.Base64 (decode)
 import Data.String.Pattern (Pattern(..))
+import Effect.Class (liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Console (log, logShow)
 import HTTPurple (RequestHeaders)
 import HTTPurple (lookup) as Headers
 import HTTPurple.Response (Response, unauthorized)
@@ -26,6 +28,7 @@ import StringParser.CodePoints (skipSpaces, regex)
 import Tunebank.Database.User (validateCredentials)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Response (customForbidden)
+import Tunebank.Logging.Winston (logError)
 import Tunebank.Types (Authorization, Credentials, isAdministrator)
 import Yoga.Postgres (Client)
 
@@ -126,12 +129,17 @@ defaultOrigin =
 validateCorsOrigin :: forall m. MonadAff m => MonadAsk Env m => Maybe String -> m String
 validateCorsOrigin mOrigin = do 
   allowedOrigins <- asks _.corsOrigins
+  logger <- asks _.logger
   case mOrigin of  
-    Nothing -> pure defaultOrigin
-    Just origin ->
-      if (elem origin allowedOrigins) then 
+    Nothing -> do 
+      _ <- liftEffect $ logError logger  "CORS: no origin in request header"
+      pure defaultOrigin
+    Just origin -> do 
+      if (elem origin allowedOrigins) then do
+        -- _ <- liftEffect $ log $ "found origin from request header which is " <> origin
         pure origin
-      else 
+      else do 
+        _ <- liftEffect $ logError logger $ "CORS: can't find origin " <> origin <> " in lookup of "  <> intercalate "," allowedOrigins
         pure defaultOrigin
 
 

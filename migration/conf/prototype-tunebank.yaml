@@ -26,5 +26,6 @@ logging:
 
 security:
   corsOrigins: 
-    - http://localhost:9000"
-    - http://foreignserver.com"
+    - http://localhost
+    - https://localhost
+    - http://foreignserver.com
