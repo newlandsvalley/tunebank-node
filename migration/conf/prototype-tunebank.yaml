@@ -20,6 +20,7 @@ mail:
   auth: 
     user: vicente.heaney@ethereal.email
     pass: 9vxCBDUfQCbE124peF
+  frontend: localhost
 
 logging: 
   dir: logs

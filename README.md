@@ -30,7 +30,11 @@ The postgres SQL scripts that initialise the test database include the DDL state
 
 ## Configuration
 
-Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` directory).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
+Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` and `importation/conf` directories).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
+
+## Reliance on a Reverse Proxy
+
+It is assumed that a reverse-proxy server will be configured between the frontend and the tunebank-node server such that tunebank-node URLs will appear to belong to the set of URLs supported by the frontend - specifically the URL `https://frontend/tunebank` should proxy requests to `http://${server.host}:${server.port}`.  This is particularly important where tunebank-node issues an email to a potential user wishing to register which contains a link to complete the registration. This URL is to the frontend server proxy address and uses the server name defined in the configuration under `${mail.frontend}`.
 
 ## Logging
 

@@ -44,6 +44,7 @@ type MailConfig =
   , port :: Int
   , secure :: Boolean
   , auth :: NM.AuthConfig
+  , frontend :: String
   }
 
 type LoggingConfig = 

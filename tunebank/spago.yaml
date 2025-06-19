@@ -9,7 +9,6 @@ package:
     - foldable-traversable
     - httpurple
     - integers
-    - logging-journald
     - newtype
     - node-fs
     - node-buffer

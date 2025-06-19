@@ -18,7 +18,7 @@ import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
-import HTTPurple (Request, Method(..), notFound, ok, ok')
+import HTTPurple (Request, Method(..), internalServerError, notFound, ok, ok')
 import HTTPurple.Body (RequestBody)
 import HTTPurple.Body (toString) as Body
 import HTTPurple.Headers (RequestHeaders)
@@ -46,7 +46,7 @@ import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
 import Tunebank.Tools.Mail (sendRegistrationMail)
-import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName)
+import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
 import Yoga.Postgres (Pool, withClient)
 
 data Route
@@ -399,10 +399,18 @@ insertUserRoute body = do
       
       case eResult of  
         Right uuid -> do
-          _ <- sendRegistrationMail newUser.email uuid
-          ok' corsHeadersAllOrigins ("User: " <> newUser.name <> " created.")
+          emailResult  <- sendRegistrationMail newUser.email uuid
+          case emailResult of 
+            Left _error -> do
+              -- we got an email error so delete the user we just added
+              _ <- liftAff $ withClient dbpool $ do
+                 deleteUser $ UserName newUser.name
+              internalServerError ("Server failed to send a registration email to " <> newUser.email)
+            Right _info -> 
+              ok' corsHeadersAllOrigins ("User: " <> newUser.name <> " created.")
         Left err -> do
           customErrorResponse err
+
 
 
 deleteUserRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response

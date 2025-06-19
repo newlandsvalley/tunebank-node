@@ -10,7 +10,7 @@ import Prelude
 import Data.Argonaut (stringify)
 import Effect.Aff.Class (class MonadAff)
 import HTTPurple.Json (jsonHeaders)
-import HTTPurple.Response (Response, badRequest', response', internalServerError, unauthorized)
+import HTTPurple.Response (Response(..), badRequest', response', internalServerError, unauthorized)
 import HTTPurple.Status (forbidden) as Status
 import Tunebank.HTTP.Headers (corsHeadersAllOrigins)
 import Tunebank.Logic.Codecs (encodeMessage)
@@ -26,7 +26,7 @@ instance showResponseError :: Show ResponseError where
   show (BadRequest r) = "BadRequest: " <> r
   show (Forbidden r) = "Forbidden: " <> r 
   show NotAuthorized = "NotAuthorized"
-  show (InternalServerError r) = "InternalServerError"
+  show (InternalServerError r) = "InternalServerError: " <> r
 
 derive instance eqResponseError :: Eq ResponseError
 
