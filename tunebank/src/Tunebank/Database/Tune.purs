@@ -5,8 +5,6 @@ import Prelude
 import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
 import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
-import Effect.Console (log, logShow)
 import Yoga.Postgres (Query(Query), Client, query_, queryOne, queryValue, queryValue_, execute)
 import Yoga.Postgres.SqlValue (toSql)
 
@@ -40,7 +38,7 @@ updateTune genre vAbc c = do
     params = [toSql vAbc.keysig, toSql vAbc.composer, toSql vAbc.origin] <>
               [toSql vAbc.source, toSql vAbc.transcriber, toSql vAbc.abc] <>
               [toSql genre, toSql vAbc.rhythm, toSql vAbc.title]
-  _ <- liftEffect $ logShow ("trying to update tune " <> vAbc.title)
+  -- _ <- liftEffect $ logShow ("trying to update tune " <> vAbc.title)
   _ <- execute (Query query) params c 
   pure vAbc.title
 
@@ -49,13 +47,13 @@ updateTune genre vAbc c = do
 -- | this is useful in migrating from MusicRest
 insertTuneWithTs :: Genre -> UserName -> TimestampString -> ValidatedAbc -> Client -> Aff String
 insertTuneWithTs genre user timestamp vAbc c = do
-  _ <- liftEffect $ log ("trying to upsert tune with ts using owner " <> (show user))
+  -- _ <- liftEffect $ log ("trying to upsert tune with ts using owner " <> (show user))
   let 
     query = "insert into tunes ( title, genre, rhythm, submitter, keysig, composer, origin, source, transcriber, abc, ts) "
             <> " values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 )"
     params = [toSql vAbc.title, toSql genre, toSql vAbc.rhythm, toSql user, toSql vAbc.keysig, toSql vAbc.composer] <>
               [toSql vAbc.origin, toSql vAbc.source, toSql vAbc.transcriber, toSql vAbc.abc, toSql timestamp] 
-  _ <- liftEffect $ log ("query: " <> query)
+  -- _ <- liftEffect $ log ("query: " <> query)
   _ <- execute (Query query) params c
   pure vAbc.title
 
@@ -119,7 +117,7 @@ upsertTuneWithTs genre auth timestamp vAbc c = do
 
 deleteTune :: Genre -> Title -> UserName -> Client -> Aff (Either ResponseError Unit)
 deleteTune genre title user c = do
-  _ <- liftEffect $ logShow ("trying to delete tune " <> show title)
+  -- _ <- liftEffect $ logShow ("trying to delete tune " <> show title)
   mOwner <- getTuneOwner genre title c
   mRole <- getUserRole user c
   let 
@@ -141,8 +139,8 @@ countSelectedTunes genre searchExpression c = do
   let 
     query = "select count(*) from tunes where genre = '" <> (show genre) <> "'" 
             <> buildSearchExpressionString searchExpression
-  _ <- liftEffect $ log ("query: " <> query)
-  _ <- liftEffect $ logShow ("trying to count selected tunes")
+  -- _ <- liftEffect $ log ("query: " <> query)
+  -- _ <- liftEffect $ logShow ("trying to count selected tunes")
   matchCount <- queryValue_ singleIntResult (Query query :: Query Int) c
   pure $ maybe 0 identity matchCount
 
@@ -153,13 +151,13 @@ getTuneRefs genre searchExpression paginationExpression c = do
             <> "from tunes where genre = '" <> (show genre) <> "'" 
             <> buildSearchExpressionString searchExpression
             <> buildPaginationExpressionString TunesPage paginationExpression
-  _ <- liftEffect $ log ("query: " <> queryText)
-  _ <- liftEffect $ logShow ("trying to get tune refs for selected tunes")
+  -- _ <- liftEffect $ log ("query: " <> queryText)
+  -- _ <- liftEffect $ logShow ("trying to get tune refs for selected tunes")
   query_ read' (Query queryText :: Query TuneRef ) c
 
 getTuneMetadata :: Genre -> Title -> Client -> Aff (Maybe TuneMetadata)
 getTuneMetadata genre title c = do
-  _ <- liftEffect $ logShow ("trying to get metadata for tune " <> show title)
+  -- _ <- liftEffect $ logShow ("trying to get metadata for tune " <> show title)
   let 
     queryText = "select title, source, composer, origin, transcriber, submitter, id, " <>
                 " floor(extract (epoch from ts))::integer as timestamp, abc " <>
@@ -169,7 +167,7 @@ getTuneMetadata genre title c = do
 
 getTuneAbc :: Genre -> Title -> Client -> Aff (Maybe String)
 getTuneAbc genre title c = do
-  _ <- liftEffect $ logShow ("trying to get abc for tune " <> show title <> " and genre " <> show genre)
+  -- _ <- liftEffect $ logShow ("trying to get abc for tune " <> show title <> " and genre " <> show genre)
   let 
     queryText = "select abc from tunes where genre = $1 and title = $2 "    
     params = [toSql genre, toSql title]

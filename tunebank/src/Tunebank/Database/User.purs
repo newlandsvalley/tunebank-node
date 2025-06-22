@@ -19,7 +19,6 @@ module Tunebank.Database.User
 import Prelude
 
 import Data.Either (Either(..), note)
-import Effect.Console (log, logShow)
 import Effect.Class (liftEffect)
 import Effect.Aff (Aff, error)
 import Effect.Exception (throw, throwException)
@@ -78,7 +77,7 @@ getUserRole user c = do
 
 getUserRecord :: UserName -> Client -> Aff (Maybe UserRecord)
 getUserRecord (UserName user) c = do
-  _ <- liftEffect $ logShow ("trying to get user record for user: " <> user)
+  -- _ <- liftEffect $ logShow ("trying to get user record for user: " <> user)
   let 
     query = 
       "select username, email, rolename as role, valid, floor(extract (epoch from ts))::integer as timestamp" 
@@ -92,13 +91,13 @@ getUserRecords paginationExpression c = do
     queryText = "select username, email, rolename as role, valid,"
                 <> " floor(extract (epoch from ts))::integer as timestamp from users " 
                 <> buildPaginationExpressionString UsersPage paginationExpression
-  _ <- liftEffect $ log "trying to get all user records "
+  -- _ <- liftEffect $ log "trying to get all user records "
   query_ read' (Query queryText :: Query UserRecord) c
 
 -- | validate a user by setting the valid flag if the hash corresponds
 validateUser :: String -> Client -> Aff Unit
 validateUser uuid c = do
-  _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
+  -- _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
   let 
     query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
   execute (Query query) [ toSql uuid ] c
@@ -106,7 +105,7 @@ validateUser uuid c = do
 -- | register a user by setting the valid flag
 changeUserPassword :: UserName -> Password -> Client -> Aff Unit
 changeUserPassword user newPassword c = do
-  _ <- liftEffect $ logShow ("trying to change password for user " <> (show user))
+  -- _ <- liftEffect $ logShow ("trying to change password for user " <> (show user))
   execute (Query "update users set passwd = $1 where username = $2") [ toSql newPassword, toSql user ] c
 
 -- | delete the user
@@ -121,7 +120,7 @@ insertUser :: NewUser -> UserValidity -> Client -> Aff (Either ResponseError Str
 insertUser newUser userValidity c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
   if (userAlreadyExists) then do
-    _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
+    -- _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
     pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
   else do
     let 
@@ -129,7 +128,7 @@ insertUser newUser userValidity c = do
       queryText = ("insert into users (username, rolename, passwd, email, valid) " <>
                   " values ($1, 'normaluser', $2, $3, $4 )" <> 
                   " returning CAST(registrationid AS CHAR(36))")
-    _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
+    -- _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
     mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String)) 
       [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ] c
     pure $ note (InternalServerError $ "user insert failed for " <> newUser.name) (join mResult)
@@ -152,7 +151,7 @@ insertExportedUser user c = do
               " values ($1, $2, $3, $4, $5, $6, $7)" 
       params =  [toSql user.name, toSql user.role, toSql user.password, toSql user.email] <>
                 [toSql user.valid, toSql user.registrationId, toSql user.timestamp]
-    _ <- liftEffect $ logShow ("trying to insert a previously exported user " <> user.name)
+    -- _ <- liftEffect $ logShow ("trying to insert a previously exported user " <> user.name)
     _ <- execute (Query query) params c
     pure $ Right unit
 
@@ -160,8 +159,8 @@ assertKnownUser :: UserName -> Client -> Aff Unit
 assertKnownUser user c = do
   eUser <- checkKnownUser user c 
   case eUser of 
-    Right (UserName username) -> do
-      liftEffect $ logShow ("user: " <> username <> " is OK")
+    Right (UserName _username) -> do
+      -- liftEffect $ logShow ("user: " <> username <> " is OK")
       pure unit 
     Left err -> do
       liftEffect $ throwException $ error err
@@ -177,14 +176,14 @@ assertIsAdministrator user c = do
 
 getUserCount :: Client -> Aff Int
 getUserCount c = do
-  _ <- liftEffect $ logShow ("trying to count total number of users")
+  -- _ <- liftEffect $ logShow ("trying to count total number of users")
   matchCount <- queryValue_ singleIntResult (Query "select count(*) from users" :: Query Int) c
   pure $ maybe 0 identity matchCount
 
 
 getUserName :: String -> Client -> Aff (Maybe String)
 getUserName userName c = do
-  _ <- liftEffect $ logShow ("trying to find users of name " <> userName)
+  -- _ <- liftEffect $ logShow ("trying to find users of name " <> userName)
   matchName <- queryValue maybeStringResult (Query "select username from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
   pure $ join matchName 
 

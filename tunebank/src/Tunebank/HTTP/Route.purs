@@ -190,7 +190,7 @@ searchRoute genre params = do
   let     
     searchExpression = buildSearchExpression params
     paginationExpression = buildSearchPaginationExpression params paging.defaultSize
-  _ <- liftEffect $ logShow searchExpression
+  -- _ <- liftEffect $ logShow searchExpression
   dbpool :: Pool  <- asks _.dbpool
   tunesPage :: TuneRefsPage <- liftAff $ withClient dbpool $ do
     getTuneRefsPage genre searchExpression paginationExpression paging.defaultSize
@@ -223,7 +223,7 @@ tuneMidiRoute genre title = do
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do 
-  _ <- liftEffect $ logShow "deleteTuneRoute"
+  -- _ <- liftEffect $ logShow "deleteTuneRoute"
   let
     mOrigin = lookup headers "origin"
   acceptableOrigin <- validateCorsOrigin mOrigin
@@ -322,7 +322,7 @@ deleteTuneCommentsRoute genre title headers = do
 
 updateCommentRoute :: forall m. MonadAff m => MonadAsk Env m => Int -> RequestBody -> RequestHeaders -> m Response
 updateCommentRoute id body headers = do 
-  _ <- liftEffect $ logShow ("update comment " <> show id)
+  -- _ <- liftEffect $ logShow ("update comment " <> show id)
   let
     mOrigin = lookup headers "origin"
   acceptableOrigin <- validateCorsOrigin mOrigin
@@ -342,11 +342,11 @@ updateCommentRoute id body headers = do
 usersRoute :: forall m. MonadAff m => MonadAsk Env m => PagingParams -> RequestHeaders -> m Response
 usersRoute pagingParams headers = do 
   paging :: PagingConfig  <- asks _.paging
-  _ <- liftEffect $ log ("user paging params: " <> show pagingParams)
+  -- _ <- liftEffect $ log ("user paging params: " <> show pagingParams)
   let 
     paginationExpression = buildPaginationExpression pagingParams paging.defaultSize
     mOrigin = lookup headers "origin"
-  _ <- liftEffect $ log $ "origin: " <> show mOrigin
+  -- _ <- liftEffect $ log $ "origin: " <> show mOrigin
   acceptableOrigin <- validateCorsOrigin mOrigin
   dbpool :: Pool  <- asks _.dbpool
   liftAff $ withClient dbpool $ \c -> do
@@ -360,12 +360,12 @@ usersRoute pagingParams headers = do
 
 checkUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 checkUserRoute headers = do 
-  _ <- liftEffect $ log "checkUserRoute"
+  -- _ <- liftEffect $ log "checkUserRoute"
   dbpool :: Pool  <- asks _.dbpool
   logger <- asks _.logger
   liftAff $ withClient dbpool $ \c -> do
     eAuth <- getAuthorization headers c
-    _ <- liftEffect $ logShow eAuth
+    -- _ <- liftEffect $ logShow eAuth
     case eAuth of 
       Right auth -> do
         liftEffect $ logInfo logger $ "login for " <> show auth.user
@@ -377,7 +377,7 @@ checkUserRoute headers = do
 
 userRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> m Response
 userRoute user = do 
-  _ <- liftEffect $ log "userRoute"
+  -- _ <- liftEffect $ log "userRoute"
   dbpool :: Pool  <- asks _.dbpool
   mUser <- liftAff $ withClient dbpool $ do
     getUserRecord user
@@ -415,7 +415,7 @@ insertUserRoute body = do
 
 deleteUserRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
 deleteUserRoute user headers = do 
-  _ <- liftEffect $ log "deleteUserRoute"
+  -- _ <- liftEffect $ log "deleteUserRoute"
   dbpool :: Pool  <- asks _.dbpool 
   liftAff $ withClient dbpool $ \c -> do
     eAuth ::  Either String Authorization <- getAuthorization headers c

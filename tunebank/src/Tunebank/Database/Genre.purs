@@ -7,8 +7,6 @@ module Tunebank.Database.Genre
 import Prelude
 
 import Data.Either (Either, note)
-import Effect.Console (logShow)
-import Effect.Class (liftEffect)
 import Effect.Aff (Aff)
 import Data.Maybe (Maybe, maybe)
 import Yoga.Postgres (Query(Query), Client, queryValue, query_)
@@ -20,13 +18,13 @@ import Tunebank.HTTP.Response (ResponseError(..))
 
 existsGenre :: Genre -> Client -> Aff Boolean
 existsGenre genre c = do
-  _ <- liftEffect $ logShow ("trying to match " <> (show genre))
+  -- _ <- liftEffect $ logShow ("trying to match " <> (show genre))
   matchCount <- queryValue singleIntResult (Query "select count(*) from genres where genre = $1" :: Query Int) [ toSql genre ] c
   pure $ maybe false ((_ > 0)) matchCount
 
 validateGenre :: Genre -> Client -> Aff (Either ResponseError Genre)
 validateGenre genre c = do
-  _ <- liftEffect $ logShow ("trying to match " <> (show genre))
+  -- _ <- liftEffect $ logShow ("trying to match " <> (show genre))
   mGenre <- queryValue maybeStringResult (Query "select genre from genres where genre = $1" :: Query (Maybe String)) [ toSql genre ] c
   pure $ map Genre $ note (BadRequest $ "Unknown genre: " <> (show genre)) $ join mGenre
 

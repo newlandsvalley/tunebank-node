@@ -9,16 +9,14 @@ import Prelude
 
 import Control.Monad.Except.Trans (runExceptT)
 import Data.Argonaut (class DecodeJson, Json, decodeJson, printJsonDecodeError)
-import Data.Bifunctor (lmap, rmap)
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Effect.Aff (Error, message)
-import Effect.Console (logShow)
+import Effect.Aff (Error)
 import Effect.Exception (error)
-import Foreign (Foreign, readArray, readInt, readString, unsafeFromForeign, typeOf)
-import Foreign.Keys (keys)
+import Foreign (Foreign, readInt, readString)
 import Unsafe.Coerce (unsafeCoerce)
-import Partial.Unsafe (unsafeCrashWith)
+
 
 read' ∷ ∀ (t ∷ Type). DecodeJson t ⇒ Foreign → Either Error t
 read' = toJson >>> decodeJson >>> lmap toError

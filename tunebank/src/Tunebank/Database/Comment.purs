@@ -15,8 +15,6 @@ import Prelude
 import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..), note)
 import Effect.Aff (Aff)
-import Effect.Class (liftEffect)
-import Effect.Console (logShow)
 import Yoga.Postgres (Query(Query), Client, query, queryValue, queryOne, execute)
 import Yoga.Postgres.SqlValue (toSql)
 
@@ -112,7 +110,7 @@ getCommentOwner commentId c = do
 
 deleteComment :: Int -> Authorization -> Client -> Aff (Either ResponseError Unit)
 deleteComment commentId auth c = do
-  _ <- liftEffect $ logShow ("trying to delete comment " <> (show commentId))
+  -- _ <- liftEffect $ logShow ("trying to delete comment " <> (show commentId))
   mOwner <- getCommentOwner commentId c
   case mOwner of 
     (Just owner) -> do
@@ -128,7 +126,7 @@ deleteComment commentId auth c = do
 -- | delete all comments for a tune
 deleteComments :: Genre -> Title -> Client -> Aff Unit
 deleteComments genre title  c = do
-  _ <- liftEffect $ logShow ("trying to delete all comments for tune " <> show title)
+  -- _ <- liftEffect $ logShow ("trying to delete all comments for tune " <> show title)
   let 
     query = "delete from comments where tuneid in (select id from tunes where genre = $1 and title = $2)"
   _ <- execute (Query query) [toSql genre, toSql title] c
@@ -136,7 +134,7 @@ deleteComments genre title  c = do
 
 updateComment :: Int -> NewComment -> Authorization -> Client -> Aff (Either ResponseError Unit)
 updateComment commentId comment auth c = do
-  _ <- liftEffect $ logShow ("trying to update comment " <> (show commentId))
+  -- _ <- liftEffect $ logShow ("trying to update comment " <> (show commentId))
   mOwner <- getCommentOwner commentId c
   case mOwner of 
     (Just owner) -> do
