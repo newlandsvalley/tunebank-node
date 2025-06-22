@@ -38,23 +38,7 @@ It is assumed that a reverse-proxy server will be configured between the fronten
 
 ## Logging
 
-Logging is to `journald` aka `systemd-journald`.  This centralised Unix logging mechanism can be queried by means of `journalctl`.  For example, on my Ubuntu system, I can find all messages logged by tunebank using `journalctl -t tunebanl-server`.
-
-Note that in order to enable logging, it is first necessary to install `libsystemd`.  On Debian-flavoured Unix, this is achieved by:
-
-```
-sudo apt-get install build-essential pkg-config libsystemd-dev
-```
-
-Note also that when installing the node `systemd` package, you will receive a warning (which may be ignored):
-
-```
-npm warn EBADENGINE Unsupported engine {
-npm warn EBADENGINE   package: 'systemd@0.4.0',
-npm warn EBADENGINE   required: { node: '>=0.6.11 <0.11.0' },
-npm warn EBADENGINE   current: { node: 'v23.6.1', npm: '10.9.2' }
-npm warn EBADENGINE }
-```
+Logging is via `Winston` and the `Winston daily rotate file` module and writes to the `logs` directory as defined in the configuration file. At the moment, logging is fairly minimal - when the server starts or shuts down, when users attempt to register or log in, when unexpected errors occur.
 
 ## Building and Running
 
