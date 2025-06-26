@@ -1,10 +1,8 @@
-module Tunebank.Tools.Mail 
-  ( sendRegistrationMail)
-  
-  where
+module Tunebank.Tools.Mail
+  ( sendRegistrationMail
+  ) where
 
 import Prelude
-
 
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Either (Either(..))
@@ -21,20 +19,20 @@ import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Types (Email)
 
 sendRegistrationMail :: forall m. MonadAff m => MonadAsk Env m => Email -> String -> m (Either Error MessageInfo)
-sendRegistrationMail toAddress uuid = do 
+sendRegistrationMail toAddress uuid = do
   logger <- asks _.logger
   config :: MailConfig <- asks _.mail
   serverConfig :: ServerConfig <- asks _.server
   let
-    transportConfig :: TransportConfig 
-    transportConfig = 
-      { host : config.host
-      , port : config.port
-      , secure : config.secure
-      , auth : config.auth
-      , web : ""
-      , mxEnabled : false
-      } 
+    transportConfig :: TransportConfig
+    transportConfig =
+      { host: config.host
+      , port: config.port
+      , secure: config.secure
+      , auth: config.auth
+      , web: ""
+      , mxEnabled: false
+      }
 
     -- this is the validation URL we would use were we to have direct communication from the frontend 
     -- but we intend to proxy requests from the frontend 'https://frontend-server/tunebank' to here
@@ -43,14 +41,14 @@ sendRegistrationMail toAddress uuid = do
 
   _ <- liftEffect $ log ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
 
-  _ <- liftEffect $ logInfo logger 
-         ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
-  
-  transporter :: Transporter <- liftEffect $ createTransporter transportConfig  
+  _ <- liftEffect $ logInfo logger
+    ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
+
+  transporter :: Transporter <- liftEffect $ createTransporter transportConfig
   message <- liftEffect $ createMessage toAddress validationUrl
   eResult <- liftAff $ sendMailMessage message transporter
 
-  case eResult of 
+  case eResult of
     Left e -> do
       _ <- liftEffect $ log ("Sending registration email to " <> toAddress <> " failed: " <> show e)
       liftEffect $ logError logger ("Sending registration email to " <> toAddress <> " failed: " <> show e)
@@ -64,7 +62,7 @@ sendRegistrationMail toAddress uuid = do
 -- | create a message for the registering recipient containing the url to complete registration
 createMessage :: Email -> String -> Effect Message
 createMessage toAddress url = do
-  let 
+  let
     recipient = "Recipient <" <> toAddress <> ">"
   pure
     { from: "noreply@tunebank.org.uk"
@@ -79,12 +77,11 @@ createMessage toAddress url = do
 -- | a version  of sendMail_ which discriminates berween success and failure
 sendMailMessage :: Message -> Transporter -> Aff (Either Error MessageInfo)
 sendMailMessage message transporter = do
-  mySendMail `catchError` \e  -> pure $ Left e
+  mySendMail `catchError` \e -> pure $ Left e
 
   where
 
   mySendMail :: Aff (Either Error MessageInfo)
-  mySendMail = do 
-    info <- sendMail_ message transporter 
+  mySendMail = do
+    info <- sendMail_ message transporter
     pure $ Right info
-  

@@ -21,9 +21,8 @@ data SearchCriterion
   | ByTranscriber
   | BySubmitter
 
-
 instance showSearchCriterion :: Show SearchCriterion where
-  show ByTitle  = "title"
+  show ByTitle = "title"
   show ByRhythm = "rhythm"
   show ByKeySig = "keysig"
   show BySource = "source"
@@ -32,64 +31,60 @@ instance showSearchCriterion :: Show SearchCriterion where
   show ByTranscriber = "transcriber"
   show BySubmitter = "submitter"
 
-
-derive instance eqSearchCriterion:: Eq SearchCriterion
-derive instance ordSearchCriterion:: Ord SearchCriterion
+derive instance eqSearchCriterion :: Eq SearchCriterion
+derive instance ordSearchCriterion :: Ord SearchCriterion
 
 data SearchOperator
-  = Equals 
+  = Equals
   | Like
 
-instance showSearchOperator :: Show SearchOperator where 
+instance showSearchOperator :: Show SearchOperator where
   show Equals = " = "
   show Like = " ilike "
 
+derive instance eqSearchOperator :: Eq SearchOperator
 
-derive instance eqSearchOperator:: Eq SearchOperator
-
-type SearchTerm = 
+type SearchTerm =
   { criterion :: SearchCriterion
-  , operator  :: SearchOperator
-  , target    :: String
+  , operator :: SearchOperator
+  , target :: String
   }
 
 type SearchExpression = Array SearchTerm
 
-
-buildTermString :: SearchTerm -> String 
-buildTermString searchTerm = 
-  " and " 
-  <> show searchTerm.criterion 
-  <> show searchTerm.operator 
-  <> embedTarget searchTerm.target (searchTerm.operator == Like)
+buildTermString :: SearchTerm -> String
+buildTermString searchTerm =
+  " and "
+    <> show searchTerm.criterion
+    <> show searchTerm.operator
+    <> embedTarget searchTerm.target (searchTerm.operator == Like)
 
   where
-  embedTarget :: String -> Boolean -> String 
-  embedTarget target isLike = 
-    if isLike then 
+  embedTarget :: String -> Boolean -> String
+  embedTarget target isLike =
+    if isLike then
       "'%" <> target <> "%'"
     else
       "'" <> target <> "'"
 
-buildSearchExpressionString :: SearchExpression -> String 
-buildSearchExpressionString = 
+buildSearchExpressionString :: SearchExpression -> String
+buildSearchExpressionString =
   map buildTermString >>> fold
 
 normaliseKeySignature :: String -> String
-normaliseKeySignature s = 
-  case (parseKeySignature s) of 
+normaliseKeySignature s =
+  case (parseKeySignature s) of
     -- try to normalise if we can
-    Right mks -> 
+    Right mks ->
       normalise mks.keySignature
     -- otherwise leave it alone, meaning search on key will fail
     _ ->
       s
-  where    
-  
+  where
+
   normalise :: KeySignature -> String
   normalise k =
-      show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
-      
+    show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
 
 -- | search params as they arrive from the request
 type SearchParams =
@@ -107,67 +102,66 @@ type SearchParams =
 
 defaultSearchParams :: SearchParams
 defaultSearchParams =
-  { title : Nothing
+  { title: Nothing
   , key: Nothing
   , rhythm: Nothing
-  , source : Nothing
-  , composer : Nothing
-  , origin : Nothing
-  , transcriber : Nothing
-  , submitter : Nothing
+  , source: Nothing
+  , composer: Nothing
+  , origin: Nothing
+  , transcriber: Nothing
+  , submitter: Nothing
   , page: (Just 1)
   , sort: (Just "alpha")
   }
 
 type SearchTermMaybeMap = Map.Map SearchCriterion (Maybe String)
 type SearchTermMap = Map.Map SearchCriterion String
-type SearchTermTuples = Array ( Tuple SearchCriterion String )
-
+type SearchTermTuples = Array (Tuple SearchCriterion String)
 
 -- | build a search expression from the search parameters coming from the client
-buildSearchExpression :: SearchParams -> SearchExpression 
-buildSearchExpression p = 
-  map f buildSearchTuples 
+buildSearchExpression :: SearchParams -> SearchExpression
+buildSearchExpression p =
+  map f buildSearchTuples
 
   where
 
   -- transform the tuple array into full search criteria
-  f :: (Tuple SearchCriterion String ) -> SearchTerm 
-  f (Tuple c t ) = 
-    let 
-      operator = 
-        case c of 
+  f :: (Tuple SearchCriterion String) -> SearchTerm
+  f (Tuple c t) =
+    let
+      operator =
+        case c of
           -- we treat key signature differently.  We attempt to normalise both the key on the database
           -- and the key supplied in the search and attempt to match them exactly
           ByKeySig -> Equals
           -- everything else is case-insensitive Like (ILike in Postgres)
-          _ -> Like  
-      target = 
-        case c of 
-          ByKeySig -> normaliseKeySignature t 
+          _ -> Like
+      target =
+        case c of
+          ByKeySig -> normaliseKeySignature t
           _ -> t
-    in  { criterion: c
-        , operator : operator
-        , target : target
-        }
+    in
+      { criterion: c
+      , operator: operator
+      , target: target
+      }
 
   -- build an array of SearchCriterion / target tuples from the possible search parameters
   -- eliminating any absent search terms
   buildSearchTuples :: SearchTermTuples
-  buildSearchTuples = 
+  buildSearchTuples =
     let
       fullMap :: SearchTermMaybeMap
-      fullMap = 
-        (   Map.insert ByTitle p.title 
-        >>> Map.insert ByRhythm p.rhythm
-        >>> Map.insert ByKeySig p.key
-        >>> Map.insert BySource p.source
-        >>> Map.insert ByComposer p.composer
-        >>> Map.insert ByOrigin p.origin 
-        >>> Map.insert ByTranscriber p.transcriber
-        >>> Map.insert BySubmitter p.submitter
+      fullMap =
+        ( Map.insert ByTitle p.title
+            >>> Map.insert ByRhythm p.rhythm
+            >>> Map.insert ByKeySig p.key
+            >>> Map.insert BySource p.source
+            >>> Map.insert ByComposer p.composer
+            >>> Map.insert ByOrigin p.origin
+            >>> Map.insert ByTranscriber p.transcriber
+            >>> Map.insert BySubmitter p.submitter
         ) Map.empty
     in
       Map.toUnfoldable $ Map.catMaybes fullMap
-
 

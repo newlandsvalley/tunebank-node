@@ -7,12 +7,12 @@ module Tunebank.Logic.Codecs
   , encodeGenres
   , encodeRhythms
   , encodeTuneMetadata
-  , encodeTuneRefs 
+  , encodeTuneRefs
   , encodeTunesPage
   , encodeComments
   , encodeComment
-  , encodeMessage)
-   where
+  , encodeMessage
+  ) where
 
 import Prelude
 
@@ -28,68 +28,60 @@ import Data.Either (Either)
 
 -- | encoding
 
-encodeGenres :: Array Genre -> Json 
-encodeGenres genres = 
-    "genres" := genres       
-      ~> jsonEmptyObject
+encodeGenres :: Array Genre -> Json
+encodeGenres genres =
+  "genres" := genres
+    ~> jsonEmptyObject
 
-encodeRhythms :: Array Rhythm -> Json 
-encodeRhythms rhythms = 
-    "rhythm" := rhythms       
-      ~> jsonEmptyObject
+encodeRhythms :: Array Rhythm -> Json
+encodeRhythms rhythms =
+  "rhythm" := rhythms
+    ~> jsonEmptyObject
 
-encodeTuneRefs :: Array TuneRef -> Json 
-encodeTuneRefs = 
+encodeTuneRefs :: Array TuneRef -> Json
+encodeTuneRefs =
   encodeJson
 
-encodeTuneMetadata :: TuneMetadata -> Json 
-encodeTuneMetadata = 
+encodeTuneMetadata :: TuneMetadata -> Json
+encodeTuneMetadata =
   encodeJson
 
-encodeTunesPage :: TuneRefsPage -> Json 
-encodeTunesPage = 
+encodeTunesPage :: TuneRefsPage -> Json
+encodeTunesPage =
   encodeJson
 
-encodeUserRecords :: Array UserRecord -> Json 
+encodeUserRecords :: Array UserRecord -> Json
 encodeUserRecords =
   encodeJson
 
-encodeUserRecord :: UserRecord -> Json 
-encodeUserRecord = 
+encodeUserRecord :: UserRecord -> Json
+encodeUserRecord =
   encodeJson
 
-encodeUserRecordsPage :: UserRecordsPage -> Json 
-encodeUserRecordsPage = 
+encodeUserRecordsPage :: UserRecordsPage -> Json
+encodeUserRecordsPage =
   encodeJson
 
-encodeMessage :: String -> Json 
-encodeMessage message = 
-    "message" := message    
-      ~> jsonEmptyObject
+encodeMessage :: String -> Json
+encodeMessage message =
+  "message" := message
+    ~> jsonEmptyObject
 
-encodeComments :: Array Comment -> Json 
-encodeComments = 
+encodeComments :: Array Comment -> Json
+encodeComments =
   encodeJson
 
-encodeComment :: Comment -> Json 
-encodeComment = 
+encodeComment :: Comment -> Json
+encodeComment =
   encodeJson
 
 -- decoding 
 
-
 decodeNewUser :: String -> Either JsonDecodeError NewUser
-decodeNewUser s = 
+decodeNewUser s =
   decodeJson =<< parseJson s
-
 
 decodeNewComment :: String -> Either JsonDecodeError NewComment
-decodeNewComment s = 
+decodeNewComment s =
   decodeJson =<< parseJson s
 
-
-
-  
-  
-  
-  

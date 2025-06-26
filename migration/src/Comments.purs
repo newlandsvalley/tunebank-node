@@ -19,8 +19,6 @@ import Args.Types (IncomingGenre)
 import Utils (handleException, mongoObjectIdToDate)
 import Yoga.Postgres (Client)
 
-
-
 {- this is what an object in a Mongo export looks like
 type ObjectId = 
  { id :: String }
@@ -28,7 +26,7 @@ type ObjectId =
 
 type MusicrestComment =
   { objectId :: String
-  , submitter :: String 
+  , submitter :: String
   , subject :: String
   , text :: String
   , tune :: Maybe String
@@ -36,60 +34,57 @@ type MusicrestComment =
 
 decodeJsonObjectId :: Json -> Either JsonDecodeError String
 decodeJsonObjectId json = do
-  obj <- decodeJson json 
+  obj <- decodeJson json
   id <- obj .: "$oid"
   pure id
 
 decodeJsonMusicrestComment :: Json -> Either JsonDecodeError MusicrestComment
 decodeJsonMusicrestComment json = do
-    obj <- decodeJson json
-    oid <- obj .: "_id"
-    objectId <- decodeJsonObjectId oid
-    submitter <- obj .: "user"
-    subject <- obj .: "subject"
-    text <- obj .: "text"
-    tune <- obj .:? "tune"
-    pure $ { objectId, submitter, subject, text, tune }
+  obj <- decodeJson json
+  oid <- obj .: "_id"
+  objectId <- decodeJsonObjectId oid
+  submitter <- obj .: "user"
+  subject <- obj .: "subject"
+  text <- obj .: "text"
+  tune <- obj .:? "tune"
+  pure $ { objectId, submitter, subject, text, tune }
 
 decodeComment :: String -> Either String MusicrestComment
-decodeComment jsonString = 
-  case (parseJson jsonString) of 
-    Left err -> 
+decodeComment jsonString =
+  case (parseJson jsonString) of
+    Left err ->
       if (length jsonString > 0) then
-        Left $ printJsonDecodeError err 
-      else 
+        Left $ printJsonDecodeError err
+      else
         Left ""
     Right json ->
       bimap printJsonDecodeError identity $ decodeJsonMusicrestComment json
 
-
 -- | migrate a comment and log the results
 migrateComment :: IncomingGenre -> Client -> Either String MusicrestComment -> Aff Unit
-migrateComment incomingGenre c eComment = do 
-  case eComment of 
-    Left err -> 
+migrateComment incomingGenre c eComment = do
+  case eComment of
+    Left err ->
       liftEffect $ log $ "decoding error: " <> err
-    Right musicrestComment -> do 
-        eResult <- migrateComment' incomingGenre musicrestComment c
-        liftEffect $ either logShow (\i -> log ("comment inserted id: " <> show i)) eResult
+    Right musicrestComment -> do
+      eResult <- migrateComment' incomingGenre musicrestComment c
+      liftEffect $ either logShow (\i -> log ("comment inserted id: " <> show i)) eResult
 
 -- migrate a successfully decoded comment
 migrateComment' :: IncomingGenre -> MusicrestComment -> Client -> Aff (Either ResponseError Int)
 migrateComment' incomingGenre musicrestComment c = do
-  let 
+  let
     genre = Genre $ show incomingGenre
     timestamp = mongoObjectIdToDate musicrestComment.objectId
-    comment =  
-      {  subject : musicrestComment.subject
-       , text : musicrestComment.text
+    comment =
+      { subject: musicrestComment.subject
+      , text: musicrestComment.text
       }
-  case musicrestComment.tune of 
-    Nothing -> 
+  case musicrestComment.tune of
+    Nothing ->
       pure $ Left $ BadRequest "skipping comment with no tune attached"
-    Just title -> 
-      catchError 
+    Just title ->
+      catchError
         (insertCommentWithTs genre (Title title) comment (UserName musicrestComment.submitter) timestamp c)
-        handleException 
-
-
+        handleException
 

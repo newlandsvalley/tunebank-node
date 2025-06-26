@@ -18,24 +18,23 @@ import Tunebank.Logging.Winston (logInfo)
 type ServerAffM = Aff (Effect Unit -> Effect Unit)
 
 main :: Effect Unit
-main = launchAff_ do 
+main = launchAff_ do
   -- load the config file tunebank.yaml which must be in the conf subdirectory
   eConfig <- loadConfig "conf"
-  case eConfig of 
+  case eConfig of
     Right config -> do
       _ <- runServer config
       pure unit
-    Left err -> 
-      liftEffect $ Console.log err 
-
+    Left err ->
+      liftEffect $ Console.log err
 
 -- | Boot up the server
 runServer :: TunebankConfig -> ServerAffM
 runServer config = do
-  env <- liftEffect $ buildEnv config  
+  env <- liftEffect $ buildEnv config
   _ <- liftEffect $ logInfo env.logger "Tunebank starting"
 
-  liftEffect $ serve' (\a -> runReaderT a env ) { hostname: config.server.host , port: config.server.port, onStarted } { route, router }
+  liftEffect $ serve' (\a -> runReaderT a env) { hostname: config.server.host, port: config.server.port, onStarted } { route, router }
   where
   onStarted = do
     Console.log " ┌───────────────────────────────────────┐"
@@ -45,5 +44,4 @@ runServer config = do
     Console.log " │  > curl -v localhost:8080             │"
     Console.log " │    # => tunebank 0.0.1                │"
     Console.log " └───────────────────────────────────────┘"
-
 

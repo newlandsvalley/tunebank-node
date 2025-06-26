@@ -1,9 +1,8 @@
-module Users 
-  ( MusicrestUser 
+module Users
+  ( MusicrestUser
   , arbitrageUser
   , decodeUser
-  )
-  where
+  ) where
 
 import Prelude
 import Data.Argonaut (Json, decodeJson, (.:), (.:?))
@@ -22,66 +21,61 @@ import Tunebank.Types (NewUser)
 import Yoga.Postgres (Client)
 import Utils (handleException)
 
-type MusicrestUser = 
-  { name :: String 
-  , password :: String 
-  , email :: String 
-  , uuid :: Maybe String 
+type MusicrestUser =
+  { name :: String
+  , password :: String
+  , email :: String
+  , uuid :: Maybe String
   , valid :: String
   }
 
-
 decodeJsonMusicrestUser :: Json -> Either JsonDecodeError MusicrestUser
 decodeJsonMusicrestUser json = do
-    obj <- decodeJson json
-    name <- obj .: "_id"
-    password <- obj .: "password"
-    email <- obj .: "email"
-    uuid <- obj .:? "uuid"
-    valid <- obj .: "valid"
-    pure $ { name, password, email, uuid, valid }
-
+  obj <- decodeJson json
+  name <- obj .: "_id"
+  password <- obj .: "password"
+  email <- obj .: "email"
+  uuid <- obj .:? "uuid"
+  valid <- obj .: "valid"
+  pure $ { name, password, email, uuid, valid }
 
 decodeUser :: String -> Either String MusicrestUser
-decodeUser jsonString = 
-  case (parseJson jsonString) of 
-    Left err -> 
+decodeUser jsonString =
+  case (parseJson jsonString) of
+    Left err ->
       if (length jsonString > 0) then
-        Left $ printJsonDecodeError err 
-      else 
+        Left $ printJsonDecodeError err
+      else
         Left ""
     Right json ->
       bimap printJsonDecodeError identity $ decodeJsonMusicrestUser json
-
-
 
 -- inspect the result of decoding a Musicrest JSON string as a User 
 -- and then attempting to load the user to the Tunebank database
 -- we ignore the administrator user and any non-validated userss
 arbitrageUser :: Client -> Either String MusicrestUser -> Aff Unit
-arbitrageUser c eUser = do 
-  case eUser of 
-    Left err -> 
+arbitrageUser c eUser = do
+  case eUser of
+    Left err ->
       liftEffect $ log $ "decoding error: " <> err
-    Right musicrestUser -> do 
-      if (musicrestUser.name == "administrator") || (musicrestUser.valid == "N") then 
-        liftEffect $ log $ "skipping " <> musicrestUser.name 
+    Right musicrestUser -> do
+      if (musicrestUser.name == "administrator") || (musicrestUser.valid == "N") then
+        liftEffect $ log $ "skipping " <> musicrestUser.name
       else do
         eResult <- migrateUser musicrestUser c
         liftEffect $ either logShow logShow eResult
 
-
 -- migrate a successfully decoded user
 migrateUser :: MusicrestUser -> Client -> Aff (Either ResponseError String)
 migrateUser musicrestUser c = do
-  let 
-    newUser :: NewUser 
-    newUser = 
-      { name : musicrestUser.name
-      , email : musicrestUser.email
-      , password : musicrestUser.password
+  let
+    newUser :: NewUser
+    newUser =
+      { name: musicrestUser.name
+      , email: musicrestUser.email
+      , password: musicrestUser.password
       }
-  catchError 
+  catchError
     (insertUser newUser Prevalidated c)
-    handleException 
+    handleException
 

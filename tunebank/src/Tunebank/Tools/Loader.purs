@@ -1,5 +1,6 @@
-module Tunebank.Tools.Loader 
-  (uploadTunes) where
+module Tunebank.Tools.Loader
+  ( uploadTunes
+  ) where
 
 import Prelude
 
@@ -21,26 +22,25 @@ uploadTunes :: Genre -> FilePath -> Client -> Aff Unit
 uploadTunes genre dirPath c = do
   _ <- liftEffect $ logShow ("importing from " <> dirPath)
   files <- readdir $ normalize dirPath
-  let 
+  let
     message = "found " <> (show $ length files) <> " files"
   _ <- liftEffect $ log message
 
   _ <- traverse (uploadFile >>> logResult) files
   pure unit
 
-  where 
+  where
   uploadFile :: FilePath -> Aff (Either ResponseError String)
-  uploadFile filePath = do 
-    let 
-      fullPath = concat [dirPath, filePath]
+  uploadFile filePath = do
+    let
+      fullPath = concat [ dirPath, filePath ]
     _ <- liftEffect $ log ("trying to read file: " <> filePath)
     text <- readTextFile UTF8 fullPath
-    upsertValidatedTune ( { user: (UserName "John"), role: (Role "normaluser") }) c genre text
+    upsertValidatedTune ({ user: (UserName "John"), role: (Role "normaluser") }) c genre text
 
-  logResult :: forall a. Show a => Aff (Either ResponseError a) -> Aff Unit 
+  logResult :: forall a. Show a => Aff (Either ResponseError a) -> Aff Unit
   logResult aff = do
-    eResult <- aff  
+    eResult <- aff
     _ <- liftEffect $ either logShow logShow eResult
     pure unit
-
 

@@ -1,8 +1,9 @@
-module Tunebank.Database.Genre 
+module Tunebank.Database.Genre
   ( existsGenre
   , getGenres
   , getGenreStrings
-  , validateGenre) where
+  , validateGenre
+  ) where
 
 import Prelude
 
@@ -31,7 +32,7 @@ validateGenre genre c = do
 -- get the array of all Genre records
 getGenreRecords :: Client -> Aff (Array GenreRecord)
 getGenreRecords = do
-  query_ read' (Query "select genre from genres order by genre" :: Query GenreRecord) 
+  query_ read' (Query "select genre from genres order by genre" :: Query GenreRecord)
 
 -- | get the list of genres as strings
 getGenreStrings :: Client -> Aff (Array String)
@@ -42,5 +43,5 @@ getGenreStrings c = do
 getGenres :: Client -> Aff (Array Genre)
 getGenres c = do
   genreRecords <- getGenreRecords c
-  pure $ map (_.genre ) genreRecords
+  pure $ map (_.genre) genreRecords
 

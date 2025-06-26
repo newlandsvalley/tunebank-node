@@ -1,9 +1,10 @@
-module Tunebank.Database.Utils 
+module Tunebank.Database.Utils
   ( maybeIntResult
   , maybeStringResult
   , singleIntResult
   , stringResult
-  , read') where
+  , read'
+  ) where
 
 import Prelude
 
@@ -17,7 +18,6 @@ import Effect.Exception (error)
 import Foreign (Foreign, readInt, readString)
 import Unsafe.Coerce (unsafeCoerce)
 
-
 read' ∷ ∀ (t ∷ Type). DecodeJson t ⇒ Foreign → Either Error t
 read' = toJson >>> decodeJson >>> lmap toError
   where
@@ -30,41 +30,37 @@ read' = toJson >>> decodeJson >>> lmap toError
 -- | even if no matching rows exist - for example resulting from a count(*) query
 singleIntResult :: Foreign -> Either Error Int
 singleIntResult = toInt >>> Right
-  where 
-  toInt :: Foreign -> Int 
+  where
+  toInt :: Foreign -> Int
   toInt = unsafeCoerce
 
 -- | to be used when we might get an Int or Nothing if no matching row exists
-maybeIntResult ::  Foreign -> Either Error (Maybe Int)
+maybeIntResult :: Foreign -> Either Error (Maybe Int)
 maybeIntResult f = do
   ans <- runExceptT $ readInt f
-  case ans of 
-    Right i -> 
+  case ans of
+    Right i ->
       pure (Just i)
     Left _ ->
       Right Nothing
 
 -- | to be used when we are querying for a single string value where we will get a null result
 -- | if no matching rows exist - for example resulting from a select name using primary key query
-maybeStringResult ::  Foreign -> Either Error (Maybe String)
+maybeStringResult :: Foreign -> Either Error (Maybe String)
 maybeStringResult f = do
   ans <- runExceptT $ readString f
-  case ans of 
-    Right str -> 
+  case ans of
+    Right str ->
       pure (Just str)
     Left _ ->
       Right Nothing
 
-stringResult ::  Foreign -> Either Error String
+stringResult :: Foreign -> Either Error String
 stringResult f = do
   ans <- runExceptT $ readString f
-  case ans of 
-    Right str -> 
+  case ans of
+    Right str ->
       Right str
     Left _ ->
       Left $ error "String expected"
-
-
-
-
 

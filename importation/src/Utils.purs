@@ -6,22 +6,15 @@ module Utils
 
 import Prelude
 
-import Data.Maybe (maybe, fromMaybe)
-import Data.Either (Either(..), either)
-import Data.DateTime.Instant (instant, toDateTime)
-import Data.Int (fromStringAs, hexadecimal, toNumber)
-import Data.Time.Duration (Milliseconds(..))
-import Data.Formatter.DateTime (formatDateTime)
+import Data.Either (Either(..))
 import Data.String (replaceAll)
 import Data.String.CodeUnits (singleton)
-import Data.String.CodePoints (CodePoint(..), codePointFromChar, fromCodePointArray)
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Data.String.Utils (lines, startsWith)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Effect.Exception (Error)
-import Data.String (take)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile)
 import Node.Path (FilePath)

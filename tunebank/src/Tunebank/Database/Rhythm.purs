@@ -1,8 +1,9 @@
-module Tunebank.Database.Rhythm 
+module Tunebank.Database.Rhythm
   ( existsRhythm
   , getRhythmsForGenre
   , getRhythmStrings
-  , validateRhythm) where
+  , validateRhythm
+  ) where
 
 import Prelude
 
@@ -19,30 +20,31 @@ import Tunebank.HTTP.Response (ResponseError(..))
 existsRhythm :: Genre -> Rhythm -> Client -> Aff Boolean
 existsRhythm genre rhythm c = do
   -- _ <- liftEffect $ logShow ("trying to match genre " <> (show genre) <> " and rhythm " <> (show rhythm))
-  mCount <- queryValue singleIntResult (Query "select count(*) from rhythms where genre = $1 and rhythm = $2" :: Query Int) 
-     [ toSql genre, toSql rhythm ] c
+  mCount <- queryValue singleIntResult (Query "select count(*) from rhythms where genre = $1 and rhythm = $2" :: Query Int)
+    [ toSql genre, toSql rhythm ]
+    c
   pure $ maybe false ((_ > 0)) mCount
 
 validateRhythm :: Genre -> Rhythm -> Client -> Aff (Either ResponseError Rhythm)
 validateRhythm genre rhythm c = do
   -- _ <- liftEffect $ logShow ("trying to match genre " <> (show genre) <> " and rhythm " <> (show rhythm))
   mRhythm <- queryValue maybeStringResult (Query "select rhythm from rhythms where genre = $1 and rhythm = $2" :: Query (Maybe String))
-     [ toSql genre, toSql rhythm]  c  
+    [ toSql genre, toSql rhythm ]
+    c
   pure $ map Rhythm $ note (BadRequest $ "Unknown rhythm: " <> (show rhythm) <> " for the " <> (show genre) <> " genre") $ join mRhythm
 
 -- | get all the rhythm records for a given genre
 getRhythmRecords :: Genre -> Client -> Aff (Array RhythmRecord)
 getRhythmRecords genre = do
-  query read' 
-     (Query "select genre, rhythm from rhythms where genre = $1 order by rhythm " :: Query RhythmRecord) 
-     [ toSql genre ] 
+  query read'
+    (Query "select genre, rhythm from rhythms where genre = $1 order by rhythm " :: Query RhythmRecord)
+    [ toSql genre ]
 
 -- | get all the rhythms for the requested genre as a string array
 getRhythmStrings :: Genre -> Client -> Aff (Array String)
 getRhythmStrings genre c = do
   rhythmRecords <- getRhythmRecords genre c
   pure $ map (_.rhythm >>> show) rhythmRecords
-
 
 getRhythmsForGenre :: Genre -> Client -> Aff (Array Rhythm)
 getRhythmsForGenre genre c = do

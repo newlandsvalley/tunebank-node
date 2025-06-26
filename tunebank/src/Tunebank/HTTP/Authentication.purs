@@ -1,4 +1,4 @@
-module Tunebank.HTTP.Authentication 
+module Tunebank.HTTP.Authentication
   ( getAuthorization
   , getCredentials
   , parseCredentials
@@ -8,7 +8,6 @@ module Tunebank.HTTP.Authentication
   ) where
 
 import Prelude
-
 
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Array (elem, intercalate)
@@ -32,83 +31,86 @@ import Tunebank.Logging.Winston (logError)
 import Tunebank.Types (Authorization, Credentials, isAdministrator)
 import Yoga.Postgres (Client)
 
-
 -- | run a process that requires the user to be authorized, 
 -- | returning an HTTP unauthorized response instead if not so
-withAnyAuthorization :: forall m. MonadAff m
+withAnyAuthorization
+  :: forall m
+   . MonadAff m
   => (Either String Authorization)
   -> (Authorization -> m Response)
   -> (m Response)
 withAnyAuthorization eAuth p = do
-  case eAuth of 
-    Left _err -> 
+  case eAuth of
+    Left _err ->
       unauthorized
     Right auth ->
-      p auth  
+      p auth
 
 -- | run a process that requires the user to be authorized as an administrator, 
 -- | returning an HTTP unauthorized response instead if not so
-withAdminAuthorization :: forall m. MonadAff m
+withAdminAuthorization
+  :: forall m
+   . MonadAff m
   => (Either String Authorization)
   -> (Authorization -> m Response)
   -> (m Response)
 withAdminAuthorization eAuth p = do
-  case eAuth of 
-    Left _err -> 
+  case eAuth of
+    Left _err ->
       unauthorized
     Right auth ->
-      if (isAdministrator auth.role ) then
-        p auth  
-      else 
+      if (isAdministrator auth.role) then
+        p auth
+      else
         customForbidden "This requires administrator authorization"
 
 -- | get the credentials from the HTTP request and check them against the database
 -- | returning either the Authorization or an error
 getAuthorization :: forall m. MonadAff m => RequestHeaders -> Client -> m (Either String Authorization)
 getAuthorization headers c = do
-  liftAff $ case getCredentials headers of 
+  liftAff $ case getCredentials headers of
     Right credentials -> do
       validateCredentials credentials c
-    Left _ -> 
-      pure $ Left "missing credentials"      
+    Left _ ->
+      pure $ Left "missing credentials"
 
 -- | get the basic auth credentials from the HTTP request
 getCredentials :: RequestHeaders -> Either String Credentials
-getCredentials headers = 
+getCredentials headers =
   case (Headers.lookup headers "Authorization") of
-    Nothing -> 
+    Nothing ->
       Left "no auth header"
-    Just value -> 
+    Just value ->
       parseCredentials value
 
 -- | parse and decode the credentials
 parseCredentials :: String -> Either String Credentials
-parseCredentials value = 
-  case parse value of  
-    Left _ -> 
+parseCredentials value =
+  case parse value of
+    Left _ ->
       Left "badly formed auth"
     Right hash ->
-      case decode hash of 
-        Left _ -> 
+      case decode hash of
+        Left _ ->
           Left "not base 64 encoded"
-        Right decoded -> 
+        Right decoded ->
           case indexOf (Pattern ":") decoded of
-            Nothing -> 
+            Nothing ->
               Left ("not a user password pair - " <> decoded)
-            Just colonPos -> 
-              let 
-                pair = splitAt colonPos decoded 
-              in 
-                Right { user: pair.before, password: (drop 1 pair.after)}
-  
+            Just colonPos ->
+              let
+                pair = splitAt colonPos decoded
+              in
+                Right { user: pair.before, password: (drop 1 pair.after) }
+
   where
   -- | Parse a basic auth expression
   parse :: String -> Either ParseError String
   parse =
-    runParser basicAuth 
+    runParser basicAuth
 
     where
-    basicAuth :: Parser String 
+    basicAuth :: Parser String
     basicAuth =
       basic *> hash
 
@@ -120,27 +122,25 @@ parseCredentials value =
     hash =
       skipSpaces *> regex "[A-Za-z0-9._~+/-]+=*" <* skipSpaces
 
-defaultOrigin :: String 
-defaultOrigin = 
+defaultOrigin :: String
+defaultOrigin =
   "http://localhost"
 
 -- | validate an HTTP request origin against the allowable CORS origins
 -- | returning either that origin (if valid) or the default if not
 validateCorsOrigin :: forall m. MonadAff m => MonadAsk Env m => Maybe String -> m String
-validateCorsOrigin mOrigin = do 
+validateCorsOrigin mOrigin = do
   allowedOrigins <- asks _.corsOrigins
   logger <- asks _.logger
-  case mOrigin of  
-    Nothing -> do 
-      _ <- liftEffect $ logError logger  "CORS: no origin in request header"
+  case mOrigin of
+    Nothing -> do
+      _ <- liftEffect $ logError logger "CORS: no origin in request header"
       pure defaultOrigin
-    Just origin -> do 
+    Just origin -> do
       if (elem origin allowedOrigins) then do
         -- _ <- liftEffect $ log $ "found origin from request header which is " <> origin
         pure origin
-      else do 
-        _ <- liftEffect $ logError logger $ "CORS: can't find origin " <> origin <> " in lookup of "  <> intercalate "," allowedOrigins
+      else do
+        _ <- liftEffect $ logError logger $ "CORS: can't find origin " <> origin <> " in lookup of " <> intercalate "," allowedOrigins
         pure defaultOrigin
-
-
 

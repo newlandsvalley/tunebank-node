@@ -1,10 +1,10 @@
-module Tunebank.Logic.Api 
-   ( getTuneMidi
-   , getTuneRefsPage
-   , getUserRecordsPage
-   , upsertValidatedTune
-   , upsertValidatedTuneWithTs
-   ) where
+module Tunebank.Logic.Api
+  ( getTuneMidi
+  , getTuneRefsPage
+  , getUserRecordsPage
+  , upsertValidatedTune
+  , upsertValidatedTuneWithTs
+  ) where
 
 import Prelude
 import Data.Abc.Midi (toMidi)
@@ -24,81 +24,76 @@ import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
 import Tunebank.HTTP.Response (ResponseError(..))
 
-
 -- | upsert a tune - insert or update the database as appropriate
 upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Aff (Either ResponseError String)
-upsertValidatedTune auth c genre tuneString =    
+upsertValidatedTune auth c genre tuneString =
   -- make sure the tune is terminated before we parse it
-  case (buildMetadata (tuneString <> "\n")) of 
+  case (buildMetadata (tuneString <> "\n")) of
     Right abcMetadata -> do
-      upsertTune genre auth abcMetadata c          
+      upsertTune genre auth abcMetadata c
     Left err -> do
       pure $ Left $ BadRequest err
 
 -- | upsert a tune together with a timestamp - insert or update the database as appropriate
 -- | useful for migration
 upsertValidatedTuneWithTs :: Authorization -> Client -> Genre -> TimestampString -> String -> Aff (Either ResponseError String)
-upsertValidatedTuneWithTs auth c genre timestamp tuneString =    
+upsertValidatedTuneWithTs auth c genre timestamp tuneString =
   -- make sure the tune is terminated before we parse it
-  case (buildMetadata (tuneString <> "\n")) of 
+  case (buildMetadata (tuneString <> "\n")) of
     Right abcMetadata -> do
-      upsertTuneWithTs genre auth timestamp abcMetadata c          
+      upsertTuneWithTs genre auth timestamp abcMetadata c
     Left err -> do
       pure $ Left $ BadRequest err
 
 -- | decorate a tune page returned from the database with its paging information
-getTuneRefsPage :: Genre -> SearchExpression ->  PaginationExpression -> Int -> Client -> Aff TuneRefsPage
+getTuneRefsPage :: Genre -> SearchExpression -> PaginationExpression -> Int -> Client -> Aff TuneRefsPage
 getTuneRefsPage genre searchExpression paginationExpression pageSize c = do
   tunes <- getTuneRefs genre searchExpression paginationExpression c
   count <- countSelectedTunes genre searchExpression c
-  let 
-    maxPages = (count / pageSize ) + 1
+  let
+    maxPages = (count / pageSize) + 1
     pagination = paginate maxPages
 
-  pure { tunes, pagination}
+  pure { tunes, pagination }
 
   where
-  page :: Int 
+  page :: Int
   page = (paginationExpression.offset / pageSize) + 1
 
   paginate :: Int -> PaginationResponse
-  paginate maxPages = { page,  maxPages, size: pageSize }
-
+  paginate maxPages = { page, maxPages, size: pageSize }
 
 -- | decorate a tune page returned from the database with its paging information
 getUserRecordsPage :: PaginationExpression -> Int -> Client -> Aff UserRecordsPage
 getUserRecordsPage paginationExpression pageSize c = do
   users <- getUserRecords paginationExpression c
   count <- getUserCount c
-  let 
-    maxPages = (count / pageSize ) + 1
+  let
+    maxPages = (count / pageSize) + 1
     pagination = paginate maxPages
 
-  pure { users, pagination}
+  pure { users, pagination }
 
   where
-  page :: Int 
+  page :: Int
   page = (paginationExpression.offset / pageSize) + 1
 
   paginate :: Int -> PaginationResponse
-  paginate maxPages = { page,  maxPages, size: pageSize }
+  paginate maxPages = { page, maxPages, size: pageSize }
 
 getTuneMidi :: Genre -> Title -> Client -> Aff (Either ResponseError Buffer)
 getTuneMidi genre title c = do
   mAbc :: Maybe String <- getTuneAbc genre title c
-  case mAbc of 
-    Nothing -> 
+  case mAbc of
+    Nothing ->
       pure $ Left $ BadRequest $ "not found - tune: " <> show title
-    Just abcString -> 
-      case (parse abcString) of 
-        Left { error, pos } -> 
+    Just abcString ->
+      case (parse abcString) of
+        Left { error, pos } ->
           pure $ Left $ InternalServerError $ "Invalid ABC: " <> error <> " at position " <> show pos
         Right tune -> do
-          let 
+          let
             intArray = (toUnfoldable <<< toMidi) tune
           buffer <- liftEffect $ fromArray intArray
           pure $ Right buffer
-
-
-
 

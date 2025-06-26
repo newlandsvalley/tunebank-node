@@ -2,9 +2,7 @@ module Migrate
   ( migrateTunes
   , migrateComments
   , migrateUsers
-  )
-  where
-
+  ) where
 
 import Prelude
 
@@ -12,7 +10,7 @@ import Data.Traversable (sequence_)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import Node.Path (FilePath, concat, normalize)
+import Node.Path (concat)
 import Comments (migrateComment, decodeComment)
 import Tunes (migrateTune, decodeTune)
 import Users (arbitrageUser, decodeUser)
@@ -22,13 +20,12 @@ import Yoga.Postgres (withClient, mkPool)
 import Args.Types (IncomingGenre)
 import Utils (readMigrationFile)
 
-
 migrateUsers :: TunebankConfig -> Aff Unit
 migrateUsers config = do
   _ <- liftEffect $ log "migrating users"
-  users <- readMigrationFile $ concat  ["migration", "users.json"]
-  let 
-    userList = map decodeUser users 
+  users <- readMigrationFile $ concat [ "migration", "users.json" ]
+  let
+    userList = map decodeUser users
   dbpool <- liftEffect $ mkPool $ connectionInfo config.db
   withClient dbpool $ \c -> do
     sequence_ $ map (arbitrageUser c) userList
@@ -36,11 +33,11 @@ migrateUsers config = do
 migrateTunes :: IncomingGenre -> TunebankConfig -> Aff Unit
 migrateTunes incomingGenre config = do
   _ <- liftEffect $ log $ "migrating " <> (show incomingGenre) <> " tunes"
-  let 
+  let
     filename = (show incomingGenre) <> "tunes.json"
-  tunes <- readMigrationFile $ concat  ["migration", filename]
-  let 
-    tuneList = map decodeTune tunes 
+  tunes <- readMigrationFile $ concat [ "migration", filename ]
+  let
+    tuneList = map decodeTune tunes
 
   dbpool <- liftEffect $ mkPool $ connectionInfo config.db
   withClient dbpool $ \c -> do
@@ -49,15 +46,13 @@ migrateTunes incomingGenre config = do
 migrateComments :: IncomingGenre -> TunebankConfig -> Aff Unit
 migrateComments incomingGenre config = do
   _ <- liftEffect $ log $ "migrating " <> (show incomingGenre) <> " comments"
-  let 
+  let
     filename = (show incomingGenre) <> "comments.json"
-  comments <- readMigrationFile $ concat  ["migration", filename]
-  let 
-    commentList = map decodeComment comments 
+  comments <- readMigrationFile $ concat [ "migration", filename ]
+  let
+    commentList = map decodeComment comments
 
   dbpool <- liftEffect $ mkPool $ connectionInfo config.db
   withClient dbpool $ \c -> do
     sequence_ $ map (migrateComment incomingGenre c) commentList
-
-
 

@@ -1,4 +1,4 @@
-module Utils 
+module Utils
   ( handleException
   , readMigrationFile
   , mongoObjectIdToDate
@@ -33,32 +33,30 @@ readMigrationFile filePath = do
 mongoTsToDateTimeString :: Number -> String
 mongoTsToDateTimeString ts =
   let
-     mInstant = instant $ Milliseconds ts
-     dateTime = maybe (bottom) (toDateTime) mInstant
+    mInstant = instant $ Milliseconds ts
+    dateTime = maybe (bottom) (toDateTime) mInstant
   in
     either (const "bad date") identity $ formatDateTime "YYYY-MM-DD hh:mm:ss" dateTime
 
-mongoObjectIdToDate :: String -> String 
-mongoObjectIdToDate oid = 
+mongoObjectIdToDate :: String -> String
+mongoObjectIdToDate oid =
   mongoTsToDateTimeString number
-  
+
   where
-    instant = decodeObjectId
-    number = toNumber instant * 1000.0
-    
-    decodeObjectId :: Int
-    decodeObjectId = 
-      fromMaybe 0 $ fromStringAs hexadecimal $ take 8 oid
+  instant = decodeObjectId
+  number = toNumber instant * 1000.0
 
+  decodeObjectId :: Int
+  decodeObjectId =
+    fromMaybe 0 $ fromStringAs hexadecimal $ take 8 oid
 
-handleException :: forall r.Error -> Aff (Either ResponseError r)
+handleException :: forall r. Error -> Aff (Either ResponseError r)
 handleException err = do
-  let 
-    errorText = show err 
-  if (startsWith  "error: duplicate key value violates unique constraint" errorText) then 
+  let
+    errorText = show err
+  if (startsWith "error: duplicate key value violates unique constraint" errorText) then
     pure $ Left $ BadRequest "skipping entry which has already been inserted"
   else do
     liftEffect $ log errorText
     pure $ Left $ BadRequest "skipping entry which is in error"
-
 

@@ -1,8 +1,8 @@
-module Tunebank.Logging.Winston 
+module Tunebank.Logging.Winston
   ( Logger
   , createLogger
   , logError
-  , logInfo 
+  , logInfo
   , logWarn
   ) where
 
@@ -13,9 +13,9 @@ import Effect.Uncurried (EffectFn1, EffectFn2, runEffectFn1, runEffectFn2)
 -- | the Winston logger
 foreign import data Logger :: Type
 
-foreign import createLoggerImpl :: EffectFn1 String Logger 
+foreign import createLoggerImpl :: EffectFn1 String Logger
 
-createLogger :: String -> Effect Logger 
+createLogger :: String -> Effect Logger
 createLogger = runEffectFn1 createLoggerImpl
 
 foreign import logErrorImpl :: EffectFn2 Logger String Unit

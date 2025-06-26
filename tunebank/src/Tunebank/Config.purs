@@ -1,4 +1,4 @@
-module Tunebank.Config 
+module Tunebank.Config
   ( ServerConfig
   , PagingConfig
   , MailConfig
@@ -6,9 +6,7 @@ module Tunebank.Config
   , SecurityConfig
   , TunebankConfig
   , loadConfig
-  )
-  
-  where
+  ) where
 
 import Prelude
 
@@ -30,32 +28,31 @@ import Node.Path (FilePath, concat)
 import Yoga.Postgres (ClientConfig) as Postgres
 import NodeMailer (AuthConfig) as NM
 
-type ServerConfig = 
-  { host :: String 
+type ServerConfig =
+  { host :: String
   , port :: Int
   }
 
-type PagingConfig = 
+type PagingConfig =
   { defaultSize :: Int }
 
-
-type MailConfig = 
-  { host :: String 
+type MailConfig =
+  { host :: String
   , port :: Int
   , secure :: Boolean
   , auth :: NM.AuthConfig
   , frontend :: String
   }
 
-type LoggingConfig = 
+type LoggingConfig =
   { dir :: String }
 
-type SecurityConfig = 
-  { corsOrigins:: Array String }
+type SecurityConfig =
+  { corsOrigins :: Array String }
 
-type TunebankConfig = 
+type TunebankConfig =
   { server :: ServerConfig
-  , db :: Postgres.ClientConfig 
+  , db :: Postgres.ClientConfig
   , paging :: PagingConfig
   , mail :: MailConfig
   , logging :: LoggingConfig
@@ -72,13 +69,13 @@ decodeYamlConfig s = case runExcept $ parseYAMLToJson s of
 
   where
   decodeDBConfig :: Json -> Either JsonDecodeError TunebankConfig
-  decodeDBConfig = 
-    decodeJson 
+  decodeDBConfig =
+    decodeJson
 
 loadConfig :: FilePath -> Aff (Either String TunebankConfig)
 loadConfig dirPath = do
   let
-    fullPath = concat [dirPath, "tunebank.yaml"]
+    fullPath = concat [ dirPath, "tunebank.yaml" ]
   _ <- liftEffect $ logShow ("reading config from " <> fullPath)
   text <- readTextFile UTF8 fullPath
   liftEffect $ decodeYamlConfig text

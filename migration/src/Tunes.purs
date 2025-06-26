@@ -1,8 +1,7 @@
-module Tunes 
+module Tunes
   ( decodeTune
   , migrateTune
   ) where
-
 
 import Prelude
 
@@ -24,63 +23,60 @@ import Args.Types (IncomingGenre)
 import Utils (mongoTsToDateTimeString)
 import Yoga.Postgres (Client)
 
-
 type MusicrestTune =
   { abc :: String
   , abcHeaders :: String
-  , submitter :: String 
+  , submitter :: String
   , ts :: String
   }
 
 decodeJsonMusicrestTune :: Json -> Either JsonDecodeError MusicrestTune
 decodeJsonMusicrestTune json = do
-    obj <- decodeJson json
-    abc <- obj .: "abc"
-    abcHeaders <- obj .: "abcHeaders"
-    submitter <- obj .: "submitter"
-    ts <- obj .: "ts"
-    pure $ { abc, abcHeaders, submitter, ts }
+  obj <- decodeJson json
+  abc <- obj .: "abc"
+  abcHeaders <- obj .: "abcHeaders"
+  submitter <- obj .: "submitter"
+  ts <- obj .: "ts"
+  pure $ { abc, abcHeaders, submitter, ts }
 
 decodeTune :: String -> Either String MusicrestTune
-decodeTune jsonString = 
-  case (parseJson jsonString) of 
-    Left err -> 
+decodeTune jsonString =
+  case (parseJson jsonString) of
+    Left err ->
       if (length jsonString > 0) then
-        Left $ printJsonDecodeError err 
-      else 
+        Left $ printJsonDecodeError err
+      else
         Left ""
     Right json ->
       bimap printJsonDecodeError identity $ decodeJsonMusicrestTune json
 
 -- | migrate a tune and log the results
 migrateTune :: IncomingGenre -> Client -> Either String MusicrestTune -> Aff Unit
-migrateTune incomingGenre c eTune = do 
-  case eTune of 
-    Left err -> 
+migrateTune incomingGenre c eTune = do
+  case eTune of
+    Left err ->
       liftEffect $ log $ "decoding error: " <> err
-    Right musicrestTune -> do 
-        eResult <- migrateTune' incomingGenre musicrestTune c
-        liftEffect $ either logShow logShow eResult
+    Right musicrestTune -> do
+      eResult <- migrateTune' incomingGenre musicrestTune c
+      liftEffect $ either logShow logShow eResult
 
 -- migrate a successfully decoded tune
 migrateTune' :: IncomingGenre -> MusicrestTune -> Client -> Aff (Either ResponseError String)
 migrateTune' incomingGenre musicrestTune c = do
-  let 
+  let
     abc = musicrestTune.abcHeaders <> musicrestTune.abc
     genre = Genre $ show incomingGenre
     musicrestTs = fromMaybe 0.0 $ fromString musicrestTune.ts
     timestamp = mongoTsToDateTimeString musicrestTs
-    auth = 
-      if (musicrestTune.submitter  == "administrator ") then 
-        { user : UserName "administrator"
-        , role : Role "administrator" 
+    auth =
+      if (musicrestTune.submitter == "administrator ") then
+        { user: UserName "administrator"
+        , role: Role "administrator"
         }
-      else 
-        { user : UserName musicrestTune.submitter
-        , role : Role "normaluser" 
+      else
+        { user: UserName musicrestTune.submitter
+        , role: Role "normaluser"
         }
   -- _ <- liftEffect $ log $ "abc: " <> abc
   upsertValidatedTuneWithTs auth c genre timestamp abc
 
-
-  
