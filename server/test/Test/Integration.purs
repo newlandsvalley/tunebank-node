@@ -52,6 +52,7 @@ postRequestsSpec = before_ prepareDB do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
+    changeUserPassword
     insertComment
     updateComment
     forbidUpdateToComment
@@ -205,6 +206,14 @@ insertExistingUser =
     newUser = """{"name":"John","password":"changeit","email":"john.doe@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
   response ?= """{"message":"username John is already taken"}"""
+
+changeUserPassword :: Test
+changeUserPassword = 
+  it "changes a user password" do
+  let 
+    userPassword = """{"name":"NewUser","password":"changedPassword"}"""  
+  response <- post 8080 Object.empty "/user/newPassword" userPassword
+  response `shouldEqual` "User: NewUser password updated."
 
 insertComment :: Test 
 insertComment = 

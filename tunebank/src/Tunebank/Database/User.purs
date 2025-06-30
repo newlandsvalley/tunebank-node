@@ -4,7 +4,7 @@ module Tunebank.Database.User
   , assertIsAdministrator
   , deleteUser
   , getUserCount
-  , getUserName
+  , getUserPassword
   , getUserRecord
   , getUserRecords
   , getUserRole
@@ -100,7 +100,7 @@ validateUser uuid c = do
     query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
   execute (Query query) [ toSql uuid ] c
 
--- | register a user by setting the valid flag
+-- | change the users's password
 changeUserPassword :: UserName -> Password -> Client -> Aff Unit
 changeUserPassword user newPassword c = do
   -- _ <- liftEffect $ logShow ("trying to change password for user " <> (show user))
@@ -181,9 +181,17 @@ getUserCount c = do
   matchCount <- queryValue_ singleIntResult (Query "select count(*) from users" :: Query Int) c
   pure $ maybe 0 identity matchCount
 
+{-
 getUserName :: String -> Client -> Aff (Maybe String)
 getUserName userName c = do
   -- _ <- liftEffect $ logShow ("trying to find users of name " <> userName)
   matchName <- queryValue maybeStringResult (Query "select username from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
   pure $ join matchName
+-}
+
+getUserPassword :: UserName -> Client -> Aff (Maybe String)
+getUserPassword userName c = do
+  -- _ <- liftEffect $ logShow ("trying to find password for user of name " <> (show userName))
+  matchPassword <- queryValue maybeStringResult (Query "select passwd from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
+  pure $ join matchPassword
 

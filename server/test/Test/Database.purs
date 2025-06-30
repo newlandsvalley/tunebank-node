@@ -19,7 +19,7 @@ import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
-import Tunebank.Database.User (UserValidity(..), deleteUser, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
+import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserPassword, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Pagination (defaultPaginationExpression)
@@ -96,6 +96,16 @@ userSpec = before_ flushUsers do
       res <- withDBConnection do
         validateCredentials credentials
       res `shouldEqual` Right ( { user: UserName "John", role : Role "normaluser" } )
+    it "changes a user password" do
+      withDBConnection \c -> do
+        let 
+          newUser :: NewUser
+          newUser = { name: "KeirStarmer", password: "changeit", email: "keirstarmer@google.com" }
+          user = UserName "KeirStarmer"
+        _ <- insertUser newUser Prevalidated c
+        _ <- changeUserPassword user "NewPassword" c
+        mPassword <- getUserPassword user c
+        mPassword `shouldEqual` Just "NewPassword"
     
 genreSpec :: Spec Unit
 genreSpec =
@@ -271,7 +281,7 @@ flushUsers= do
     -- delete any existing new user from previous test runs
     deleteUser (UserName "NewUser") c
     deleteUser (UserName "Albert") c
-    deleteUser (UserName "Keir Starmer") c
+    deleteUser (UserName "KeirStarmer") c
 
 deleteAllScandiTunes :: Client -> Aff Unit 
 deleteAllScandiTunes c = do

@@ -18,6 +18,7 @@ module Tunebank.Types
   , UserRecord
   , UserRecordExported
   , UserName(..)
+  , UserPassword
   , isAdministrator
   ) where
 
@@ -194,6 +195,12 @@ type UserRecordExported =
   , valid :: String
   , registrationId :: String
   , timestamp :: String
+  }
+
+-- | update password request
+type UserPassword =
+  { name :: String
+  , password :: Password
   }
 
 type TuneRef =

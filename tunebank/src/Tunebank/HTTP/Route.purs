@@ -34,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (UserValidity(..), deleteUser, getUserRecord, insertUser, validateUser)
+import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserRecord, insertUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
@@ -42,7 +42,7 @@ import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
 import Tunebank.Tools.Mail (sendRegistrationMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
@@ -60,6 +60,7 @@ data Route
   | Comments Genre Title
   | Comment Int
   | UserCheck
+  | UserNewPassword
   | Users PagingParams
   | User UserName
   | UserValidate String
@@ -107,6 +108,7 @@ route = root $ sum
       , sort: optional <<< string
       }
   , "UserCheck": "user" / "check" / noArgs -- comes first otherwise 'check' taken as user name
+  , "UserNewPassword" : "user" / "newPassword" / noArgs -- ditto
   , "Users": "user" ?
       { page: optional <<< int
       , sort: optional <<< string
@@ -142,6 +144,12 @@ router { route: Comment id, method: Post, headers, body } = updateCommentRoute i
 router { route: Comment id } = commentRoute id
 router { route: UserCheck, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserCheck, headers } = checkUserRoute headers
+router { route: UserNewPassword, method: Options, headers } = preflightOptionsRoute headers
+{-
+router { route: UserNewPassword, method: Post, body } = userNewPasswordRoute body 
+router { route: UserNewPassword } = routeError ["user", "newPassword"]
+-}
+router { route: UserNewPassword, body } = userNewPasswordRoute body 
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
 router { route: Users _params, method: Post, body } = insertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
@@ -420,6 +428,18 @@ validateUserRoute uuid = do
   _ <- liftAff $ withClient dbpool $ do
     validateUser uuid
   ok' corsHeadersAllOrigins "validated"
+
+userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+userNewPasswordRoute body = do
+  jsonString <- Body.toString body
+  case (decodeUserPassword jsonString) of
+    Left err ->
+      customBadRequest $ printJsonDecodeError err
+    Right userPassword -> do
+      dbpool :: Pool <- asks _.dbpool
+      _ <- liftAff $ withClient dbpool $ do
+        changeUserPassword (UserName userPassword.name) userPassword.password
+      ok' corsHeadersAllOrigins ("User: " <> userPassword.name <> " password updated.")
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 preflightOptionsRoute headers = do
