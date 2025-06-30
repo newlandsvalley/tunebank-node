@@ -61,7 +61,7 @@ userSpec = before_ flushUsers do
       res `shouldEqual` Nothing
     it "finds all users" do
       res <- withDBConnection $ getUserRecords defaultPaginationExpression
-      length res `shouldEqual` 4
+      length res `shouldEqual` 5
     it "inserts a new (as yet unregistered) user" do
       let 
         newUser :: NewUser
@@ -282,6 +282,13 @@ flushUsers= do
     deleteUser (UserName "NewUser") c
     deleteUser (UserName "Albert") c
     deleteUser (UserName "KeirStarmer") c
+    deleteUser (UserName "TonyBlair") c
+    -- prevalidate Tony Blair used for change password integration tests
+    let 
+      tonyBlair :: NewUser
+      tonyBlair = { name: "TonyBlair", password: "changeit", email: "tony@blairfoundation.com" }     
+    _ <- insertUser tonyBlair Prevalidated c
+    pure unit
 
 deleteAllScandiTunes :: Client -> Aff Unit 
 deleteAllScandiTunes c = do

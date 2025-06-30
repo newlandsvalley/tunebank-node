@@ -145,11 +145,7 @@ router { route: Comment id } = commentRoute id
 router { route: UserCheck, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserCheck, headers } = checkUserRoute headers
 router { route: UserNewPassword, method: Options, headers } = preflightOptionsRoute headers
-{-
-router { route: UserNewPassword, method: Post, body } = userNewPasswordRoute body 
-router { route: UserNewPassword } = routeError ["user", "newPassword"]
--}
-router { route: UserNewPassword, body } = userNewPasswordRoute body 
+router { route: UserNewPassword, body, headers } = userNewPasswordRoute body headers
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
 router { route: Users _params, method: Post, body } = insertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
@@ -429,17 +425,20 @@ validateUserRoute uuid = do
     validateUser uuid
   ok' corsHeadersAllOrigins "validated"
 
-userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
-userNewPasswordRoute body = do
+userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> RequestHeaders -> m Response
+userNewPasswordRoute body headers = do
   jsonString <- Body.toString body
   case (decodeUserPassword jsonString) of
-    Left err ->
+    Left err -> do 
+      -- _ <- liftEffect $ logShow $ "Error decoding JSON " <> (show err)
       customBadRequest $ printJsonDecodeError err
     Right userPassword -> do
       dbpool :: Pool <- asks _.dbpool
-      _ <- liftAff $ withClient dbpool $ do
-        changeUserPassword (UserName userPassword.name) userPassword.password
-      ok' corsHeadersAllOrigins ("User: " <> userPassword.name <> " password updated.")
+      liftAff $ withClient dbpool $ \c -> do
+        eAuth :: Either String Authorization <- getAuthorization headers c
+        withAnyAuthorization eAuth $ \auth -> do
+          changeUserPassword auth.user userPassword.password c
+          ok' corsHeadersAllOrigins ("User: " <> (show auth.user) <> " password updated.")
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 preflightOptionsRoute headers = do

@@ -211,9 +211,10 @@ changeUserPassword :: Test
 changeUserPassword = 
   it "changes a user password" do
   let 
-    userPassword = """{"name":"NewUser","password":"changedPassword"}"""  
-  response <- post 8080 Object.empty "/user/newPassword" userPassword
-  response `shouldEqual` "User: NewUser password updated."
+    userPassword = """{"password":"changedPassword"}"""   
+    newUserHeaders = authHeadersFor "TonyBlair"
+  response <- post 8080 newUserHeaders "/user/newPassword" userPassword
+  response `shouldEqual` "User: TonyBlair password updated."
 
 insertComment :: Test 
 insertComment = 

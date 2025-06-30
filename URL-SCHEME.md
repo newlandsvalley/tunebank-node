@@ -38,6 +38,8 @@ Only the original submitter of the tune or a user wth `Administrator` privileges
 *  POST / _user_  - add a new (as yet not fully validated) user
 *  GET / _user_  / _validate_ / **uuid** - validate a user by checking the uuid returned to us
 *  GET / _user_ / **username** - get the details of a given user
+*  DELETE / _user_ / **username** - delete the given user
+*  POST / _user_ / _newPassword_ - update the password for the logged-in user
 *  GET / _user_ / check - check that the user in the Auth header is known to us
 *  GET / _user_ / search - get a paged list of users 
 
