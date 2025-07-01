@@ -12,7 +12,7 @@ import Data.Array (intercalate)
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
@@ -38,13 +38,13 @@ import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser,
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
-import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
+import Tunebank.HTTP.Response (customBadRequest, customErrorResponse, customInternalServerError)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
-import Tunebank.Tools.Mail (sendRegistrationMail)
+import Tunebank.Tools.Mail (sendRegistrationMail, sendNewPasswordOTPMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
 import Yoga.Postgres (Pool, withClient)
 
@@ -60,7 +60,8 @@ data Route
   | Comments Genre Title
   | Comment Int
   | UserCheck
-  | UserNewPassword
+  | UserNewPasswordOTP String         -- One-Time-Password for a change password request
+  | UserNewPassword                   -- The actual change password
   | Users PagingParams
   | User UserName
   | UserValidate String
@@ -108,6 +109,7 @@ route = root $ sum
       , sort: optional <<< string
       }
   , "UserCheck": "user" / "check" / noArgs -- comes first otherwise 'check' taken as user name
+  , "UserNewPasswordOTP" : "user" / "newPasswordOTP" / (string segment) -- ditto
   , "UserNewPassword" : "user" / "newPassword" / noArgs -- ditto
   , "Users": "user" ?
       { page: optional <<< int
@@ -144,6 +146,7 @@ router { route: Comment id, method: Post, headers, body } = updateCommentRoute i
 router { route: Comment id } = commentRoute id
 router { route: UserCheck, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserCheck, headers } = checkUserRoute headers
+router { route: UserNewPasswordOTP uuid, headers } = userNewPasswordOTPRoute uuid headers
 router { route: UserNewPassword, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserNewPassword, body, headers } = userNewPasswordRoute body headers
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
@@ -425,6 +428,31 @@ validateUserRoute uuid = do
     validateUser uuid
   ok' corsHeadersAllOrigins "validated"
 
+
+-- | Receive the One-Time-Password UUID from the request and email it to the logged-in user
+userNewPasswordOTPRoute :: forall m. MonadAff m => MonadAsk Env m => String -> RequestHeaders -> m Response
+userNewPasswordOTPRoute uuid headers = do
+  dbpool :: Pool <- asks _.dbpool
+  mUserRecord <- liftAff $ withClient dbpool $ \c -> do
+    eAuth :: Either String Authorization <- getAuthorization headers c
+    case eAuth of 
+      Right auth -> do
+        getUserRecord auth.user c
+      Left _ ->
+        pure Nothing
+
+  case mUserRecord of 
+    Just userRecord -> do
+      emailResult <- sendNewPasswordOTPMail userRecord.email uuid
+      either 
+        customErrorResponse 
+        (const $ ok' corsHeadersAllOrigins ("OTP emailed to user: " <> (show userRecord.username)))
+        emailResult
+            
+    Nothing ->
+      customInternalServerError "User not found"
+
+-- | Change the user password.  The frontend is repsonsible for determining if the OTP password has been validated
 userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> RequestHeaders -> m Response
 userNewPasswordRoute body headers = do
   jsonString <- Body.toString body

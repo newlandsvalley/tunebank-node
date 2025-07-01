@@ -3,6 +3,7 @@ module Tunebank.HTTP.Response
   , customBadRequest
   , customForbidden
   , customErrorResponse
+  , customInternalServerError
   ) where
 
 import Prelude
@@ -10,7 +11,7 @@ import Prelude
 import Data.Argonaut (stringify)
 import Effect.Aff.Class (class MonadAff)
 import HTTPurple.Json (jsonHeaders)
-import HTTPurple.Response (Response(..), badRequest', response', internalServerError, unauthorized)
+import HTTPurple.Response (Response(..), badRequest', response', internalServerError, internalServerError', unauthorized)
 import HTTPurple.Status (forbidden) as Status
 import Tunebank.HTTP.Headers (corsHeadersAllOrigins)
 import Tunebank.Logic.Codecs (encodeMessage)
@@ -54,4 +55,11 @@ customForbidden message = do
   let
     body = stringify $ encodeMessage message
   response' Status.forbidden (jsonHeaders <> corsHeadersAllOrigins) body
+
+-- | 500 Internal Server Error with a json message in the body
+customInternalServerError :: forall m. MonadAff m => String -> m Response
+customInternalServerError message = do
+  let
+    body = stringify $ encodeMessage message
+  internalServerError' (jsonHeaders <> corsHeadersAllOrigins) body
 

@@ -45,6 +45,7 @@ getRequestsSpec =
     registerUser
     checkUser
     checkUnknownUser
+    emailUserOTP
 
 
 postRequestsSpec :: Test
@@ -187,6 +188,15 @@ checkUnknownUser =
     awaitStarted 8080
     responseStatus <- getStatus 8080 unknownAuthHeaders "/user/check"
     responseStatus ?= 401 -- unauthorized
+
+emailUserOTP :: Test
+emailUserOTP = 
+  it "sends an email with an OTP to the current user" do
+    awaitStarted 8080
+    responseStatus <- getStatus 8080 normalAuthHeaders "/user/newPasswordOTP/"
+    response <- get 8080 normalAuthHeaders "/user/newPasswordOTP/"
+    responseStatus ?= 200
+    response ?= "OTP emailed to user: John"
 
 
 -- POST request tests
