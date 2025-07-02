@@ -54,8 +54,9 @@ handleException :: forall r. Error -> Aff (Either ResponseError r)
 handleException err = do
   let
     errorText = show err
-  if (startsWith "error: duplicate key value violates unique constraint" errorText) then
-    pure $ Left $ BadRequest "skipping entry which has already been inserted"
+  if (startsWith "error: duplicate key value violates unique constraint" errorText) then do
+    liftEffect $ log errorText
+    pure $ Left $ BadRequest "skipping entry which has already been inserted or which otherwise violates a unique constraint"
   else do
     liftEffect $ log errorText
     pure $ Left $ BadRequest "skipping entry which is in error"

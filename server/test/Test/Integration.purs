@@ -52,6 +52,7 @@ postRequestsSpec = before_ prepareDB do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
+    enforceUniqueEmail
     emailUserOTP
     changeUserPassword
     insertComment
@@ -208,6 +209,15 @@ insertExistingUser =
     newUser = """{"name":"John","password":"changeit","email":"john.doe@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
   response ?= """{"message":"username John is already taken"}"""
+
+enforceUniqueEmail :: Test
+enforceUniqueEmail = 
+  it "forbids user insert if the email is taken by a validated user" do
+  -- we use a different name from Tont Blair but use his email address
+  let 
+    newUser = """{"name":"CherieBlair","password":"changeit","email":"tony@blairfoundation.com"}"""  
+  response <- post 8080 Object.empty "/user" newUser 
+  response `shouldEqual` """{"message":"email tony@blairfoundation.com is already taken by another user"}"""
 
 emailUserOTP :: Test
 emailUserOTP = 

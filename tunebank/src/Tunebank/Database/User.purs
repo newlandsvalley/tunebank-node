@@ -20,17 +20,17 @@ module Tunebank.Database.User
 import Prelude
 
 import Data.Either (Either(..), note)
-import Effect.Class (liftEffect)
-import Effect.Aff (Aff, error)
-import Effect.Exception (throw, throwException)
 import Data.Maybe (Maybe(..), maybe)
+import Data.Newtype (overF)
+import Effect.Aff (Aff, error)
+import Effect.Class (liftEffect)
+import Effect.Exception (throw, throwException)
+import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
+import Tunebank.HTTP.Response (ResponseError(..))
+import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
+import Tunebank.Types (Authorization, Credentials, Email, NewUser, Password, UserName(..), Role(..), UserRecord, UserRecordExported)
 import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValue, queryValue_)
 import Yoga.Postgres.SqlValue (toSql)
-
-import Tunebank.Database.Utils (read', maybeStringResult, singleIntResult)
-import Tunebank.Pagination (PaginationExpression, PageType(..), buildPaginationExpressionString)
-import Tunebank.Types (Authorization, Credentials, NewUser, Password, UserName(..), Role(..), UserRecord, UserRecordExported)
-import Tunebank.HTTP.Response (ResponseError(..))
 
 -- | Validity of a user about to be inserted
 data UserValidity
@@ -50,6 +50,17 @@ existsUser userName c = do
   -- _ <- liftEffect $ logShow ("trying to match " <> userName)
   matchCount <- queryValue singleIntResult (Query "select count(*) from users where username = $1" :: Query Int) [ toSql userName ] c
   pure $ maybe false ((_ > 0)) matchCount
+
+-- | get the user validity from the email address if she exists
+-- | result options are:
+-- |   Nothing  - no user is using the email
+-- |   Just "Y" - a validated user is using the email
+-- |   Just "N" - a user is using the email who has not, for whatever reason, completed the registration
+getValidityFromEmail :: Email -> Client -> Aff (Maybe String)
+getValidityFromEmail email c = do
+  -- _ <- liftEffect $ logShow ("trying to get user validity for email" <> email)
+  mValidity <- queryValue maybeStringResult (Query "select valid from users where email = $1" :: Query (Maybe String)) [ toSql email ] c
+  pure $ join mValidity
 
 validateCredentials :: Credentials -> Client -> Aff (Either String Authorization)
 validateCredentials credentials c = do
@@ -116,23 +127,37 @@ deleteUser user c = do
 insertUser :: NewUser -> UserValidity -> Client -> Aff (Either ResponseError String)
 insertUser newUser userValidity c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
+  mExistingValidity <- getValidityFromEmail newUser.email c
   if (userAlreadyExists) then do
     -- _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
     pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
+  else if (mExistingValidity == Just "Y") then do
+    pure $ Left $ BadRequest ("email " <> newUser.email <> " is already taken by another user")
   else do
     let
       valid = validity userValidity
       queryText =
-        ( "insert into users (username, rolename, passwd, email, valid) "
-            <> " values ($1, 'normaluser', $2, $3, $4 )"
-            <>
-              " returning CAST(registrationid AS CHAR(36))"
-        )
+        case mExistingValidity of 
+          Nothing -> 
+            ( "insert into users (username, rolename, passwd, email, valid) "
+                <> " values ($1, 'normaluser', $2, $3, $4 )"
+                <> " returning CAST(registrationid AS CHAR(36))"
+            )
+          _ {- Just "N" -} ->
+            ( "update users set username = $1, passwd = $2 where email = $3 "
+                <> " returning CAST(registrationid AS CHAR(36))"
+            )
     -- _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
-    mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String))
-      [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ]
-      c
-    pure $ note (InternalServerError $ "user insert failed for " <> newUser.name) (join mResult)
+    mResult <- case mExistingValidity of 
+      Nothing -> 
+        queryValue maybeStringResult (Query queryText :: Query (Maybe String))
+                  [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ]
+                  c
+      _ -> 
+        queryValue maybeStringResult (Query queryText :: Query (Maybe String))
+                  [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
+                  c
+    pure $ note (InternalServerError $ "user creation failed for " <> newUser.name) (join mResult)
 
   where
   validity :: UserValidity -> String

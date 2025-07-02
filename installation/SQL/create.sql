@@ -10,6 +10,7 @@ CREATE TABLE users (
     valid char (1),
     registrationid uuid default gen_random_uuid(),
     ts timestamp default current_timestamp,
+    UNIQUE (email),
     UNIQUE (registrationid)
 );
 
