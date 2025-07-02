@@ -19,6 +19,7 @@ module Tunebank.Types
   , UserRecordExported
   , UserName(..)
   , UserPassword
+  , UserPasswordOTP
   , isAdministrator
   ) where
 
@@ -197,9 +198,17 @@ type UserRecordExported =
   , timestamp :: String
   }
 
+-- | one-time-password for an impending update password request
+type UserPasswordOTP =
+  { name :: String
+  , otp :: String
+  }
+
 -- | update password request
 type UserPassword =
-  { password :: Password }
+  { name :: String
+  , password :: Password 
+  }
 
 type TuneRef =
   { title :: Title

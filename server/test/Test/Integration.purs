@@ -45,7 +45,6 @@ getRequestsSpec =
     registerUser
     checkUser
     checkUnknownUser
-    emailUserOTP
 
 
 postRequestsSpec :: Test
@@ -53,6 +52,7 @@ postRequestsSpec = before_ prepareDB do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
+    emailUserOTP
     changeUserPassword
     insertComment
     updateComment
@@ -189,14 +189,6 @@ checkUnknownUser =
     responseStatus <- getStatus 8080 unknownAuthHeaders "/user/check"
     responseStatus ?= 401 -- unauthorized
 
-emailUserOTP :: Test
-emailUserOTP = 
-  it "sends an email with an OTP to the current user" do
-    awaitStarted 8080
-    responseStatus <- getStatus 8080 normalAuthHeaders "/user/newPasswordOTP/"
-    response <- get 8080 normalAuthHeaders "/user/newPasswordOTP/"
-    responseStatus ?= 200
-    response ?= "OTP emailed to user: John"
 
 
 -- POST request tests
@@ -217,13 +209,21 @@ insertExistingUser =
   response <- post 8080 Object.empty "/user" newUser 
   response ?= """{"message":"username John is already taken"}"""
 
+emailUserOTP :: Test
+emailUserOTP = 
+  it "sends an email with an OTP to the user" do
+    awaitStarted 8080
+    let 
+      userPasswordOTP = """{"name":"TonyBlair","otp":"123-456-789"}"""   
+    response <- post 8080 Object.empty "/user/newPasswordOTP" userPasswordOTP
+    response `shouldEqual` "OTP emailed to user: TonyBlair"
+
 changeUserPassword :: Test
 changeUserPassword = 
   it "changes a user password" do
   let 
-    userPassword = """{"password":"changedPassword"}"""   
-    newUserHeaders = authHeadersFor "TonyBlair"
-  response <- post 8080 newUserHeaders "/user/newPassword" userPassword
+    userPassword = """{"name":"TonyBlair","password":"changedPassword"}"""   
+  response <- post 8080 Object.empty "/user/newPassword" userPassword
   response `shouldEqual` "User: TonyBlair password updated."
 
 insertComment :: Test 

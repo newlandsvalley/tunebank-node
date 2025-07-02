@@ -2,6 +2,7 @@ module Tunebank.Logic.Codecs
   ( decodeNewComment
   , decodeNewUser
   , decodeUserPassword
+  , decodeUserPasswordOTP
   , encodeUserRecords
   , encodeUserRecord
   , encodeUserRecordsPage
@@ -88,5 +89,9 @@ decodeNewComment s =
 
 decodeUserPassword :: String -> Either JsonDecodeError UserPassword
 decodeUserPassword s =
+  decodeJson =<< parseJson s
+
+decodeUserPasswordOTP :: String -> Either JsonDecodeError UserPasswordOTP
+decodeUserPasswordOTP s =
   decodeJson =<< parseJson s
 

@@ -42,7 +42,7 @@ import Tunebank.HTTP.Response (customBadRequest, customErrorResponse, customInte
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
-import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, decodeUserPasswordOTP, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
 import Tunebank.Tools.Mail (sendRegistrationMail, sendNewPasswordOTPMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
@@ -60,7 +60,7 @@ data Route
   | Comments Genre Title
   | Comment Int
   | UserCheck
-  | UserNewPasswordOTP String         -- One-Time-Password for a change password request
+  | UserNewPasswordOTP                -- One-Time-Password for a change password request
   | UserNewPassword                   -- The actual change password
   | Users PagingParams
   | User UserName
@@ -109,8 +109,8 @@ route = root $ sum
       , sort: optional <<< string
       }
   , "UserCheck": "user" / "check" / noArgs -- comes first otherwise 'check' taken as user name
-  , "UserNewPasswordOTP" : "user" / "newPasswordOTP" / (string segment) -- ditto
   , "UserNewPassword" : "user" / "newPassword" / noArgs -- ditto
+  , "UserNewPasswordOTP" : "user" / "newPasswordOTP" / noArgs -- ditto
   , "Users": "user" ?
       { page: optional <<< int
       , sort: optional <<< string
@@ -146,9 +146,10 @@ router { route: Comment id, method: Post, headers, body } = updateCommentRoute i
 router { route: Comment id } = commentRoute id
 router { route: UserCheck, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserCheck, headers } = checkUserRoute headers
-router { route: UserNewPasswordOTP uuid, headers } = userNewPasswordOTPRoute uuid headers
 router { route: UserNewPassword, method: Options, headers } = preflightOptionsRoute headers
-router { route: UserNewPassword, body, headers } = userNewPasswordRoute body headers
+router { route: UserNewPassword, body } = userNewPasswordRoute body
+router { route: UserNewPasswordOTP, method: Options, headers } = preflightOptionsRoute headers
+router { route: UserNewPasswordOTP, body } = userNewPasswordOTPRoute body
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
 router { route: Users _params, method: Post, body } = insertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
@@ -429,32 +430,33 @@ validateUserRoute uuid = do
   ok' corsHeadersAllOrigins "validated"
 
 
--- | Receive the One-Time-Password UUID from the request and email it to the logged-in user
-userNewPasswordOTPRoute :: forall m. MonadAff m => MonadAsk Env m => String -> RequestHeaders -> m Response
-userNewPasswordOTPRoute uuid headers = do
-  dbpool :: Pool <- asks _.dbpool
-  mUserRecord <- liftAff $ withClient dbpool $ \c -> do
-    eAuth :: Either String Authorization <- getAuthorization headers c
-    case eAuth of 
-      Right auth -> do
-        getUserRecord auth.user c
-      Left _ ->
-        pure Nothing
+-- | Receive the One-Time-Password UUID from the request body and email it to the user if we find her
+userNewPasswordOTPRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+userNewPasswordOTPRoute body = do
+  jsonString <- Body.toString body
+  case (decodeUserPasswordOTP jsonString) of
+    Left err -> do 
+      -- _ <- liftEffect $ logShow $ "Error decoding JSON " <> (show err)
+      customBadRequest $ printJsonDecodeError err
+    Right userPasswordOTP -> do
+      dbpool :: Pool <- asks _.dbpool
+      mUserRecord <- liftAff $ withClient dbpool $ do
+        getUserRecord (UserName userPasswordOTP.name)
 
-  case mUserRecord of 
-    Just userRecord -> do
-      emailResult <- sendNewPasswordOTPMail userRecord.email uuid
-      either 
-        customErrorResponse 
-        (const $ ok' corsHeadersAllOrigins ("OTP emailed to user: " <> (show userRecord.username)))
-        emailResult
+      case mUserRecord of 
+        Just userRecord -> do
+          emailResult <- sendNewPasswordOTPMail userRecord.email userPasswordOTP.otp
+          either 
+            customErrorResponse 
+            (const $ ok' corsHeadersAllOrigins ("OTP emailed to user: " <> (show userRecord.username)))
+            emailResult
             
-    Nothing ->
-      customInternalServerError "User not found"
+        Nothing ->
+          customInternalServerError "User not found"
 
--- | Change the user password.  The frontend is repsonsible for determining if the OTP password has been validated
-userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> RequestHeaders -> m Response
-userNewPasswordRoute body headers = do
+-- | Change the user password.  The frontend is responsible for determining if the OTP password has been validated
+userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+userNewPasswordRoute body = do
   jsonString <- Body.toString body
   case (decodeUserPassword jsonString) of
     Left err -> do 
@@ -463,10 +465,8 @@ userNewPasswordRoute body headers = do
     Right userPassword -> do
       dbpool :: Pool <- asks _.dbpool
       liftAff $ withClient dbpool $ \c -> do
-        eAuth :: Either String Authorization <- getAuthorization headers c
-        withAnyAuthorization eAuth $ \auth -> do
-          changeUserPassword auth.user userPassword.password c
-          ok' corsHeadersAllOrigins ("User: " <> (show auth.user) <> " password updated.")
+        changeUserPassword (UserName userPassword.name) userPassword.password c
+        ok' corsHeadersAllOrigins ("User: " <> userPassword.name <> " password updated.")
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 preflightOptionsRoute headers = do
