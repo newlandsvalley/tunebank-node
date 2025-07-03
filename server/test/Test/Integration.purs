@@ -52,6 +52,7 @@ postRequestsSpec = before_ prepareDB do
   describe "Post requests" do
     insertNewUser
     insertExistingUser
+    updateExistingUser
     enforceUniqueEmail
     emailUserOTP
     changeUserPassword
@@ -61,7 +62,8 @@ postRequestsSpec = before_ prepareDB do
 
   where 
     prepareDB = do 
-      removeUser "Albert"
+      _ <- removeUser "Albert"
+      removeUser "IvankaTrump"
 
 
 deleteRequestsSpec :: Test
@@ -204,11 +206,21 @@ insertNewUser =
 
 insertExistingUser :: Test
 insertExistingUser = 
-  it "forbids insertion of an existing user" do
+  it "forbids insertion of an existing user if she's validated" do
   let 
     newUser = """{"name":"John","password":"changeit","email":"john.doe@gmail.com"}"""  
   response <- post 8080 Object.empty "/user" newUser 
   response ?= """{"message":"username John is already taken"}"""
+
+updateExistingUser :: Test
+updateExistingUser = 
+  it "allows update of an existing user if she's not yet validated" do
+  let 
+    newUser = """{"name":"DonaldTrump","password":"changeit","email":"donald@truthsocial.com"}"""  
+    updatedUser = """{"name":"IvankaTrump","password":"changeit","email":"donald@truthsocial.com"}"""  
+  _ <- post 8080 Object.empty "/user" newUser 
+  response <- post 8080 Object.empty "/user" updatedUser 
+  response `shouldEqual` "User: IvankaTrump created."
 
 enforceUniqueEmail :: Test
 enforceUniqueEmail = 
