@@ -40,6 +40,7 @@ Only the original submitter of the tune or a user wth `Administrator` privileges
 *  GET / _user_ / **username** - get the details of a given user
 *  DELETE / _user_ / **username** - delete the given user
 *  POST / _user_ / _newPassword_ - update the password for the logged-in user
+*  POST / _user_ / _newPasswordOTP_ - send the user a one-time-password to prepare for a password change
 *  GET / _user_ / check - check that the user in the Auth header is known to us
 *  GET / _user_ / search - get a paged list of users 
 

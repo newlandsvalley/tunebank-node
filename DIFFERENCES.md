@@ -18,6 +18,14 @@ Musicrest requires the client to generate a comment key derived from the current
 
 Tunebank-node merely requires an ABC file to be uploaded in string format whereas Musicrest required it to be sent as form-url-encoded using the tag `abc`.
 
+## Uniqueness of User Passwords
+
+Musicrest mistakenly allows multiple occurrences of an email address attached to different user names. This is fixed in tunebank-node.  Migration will simply pick the first and skip the rest.
+
+## Forgot User Name and Forgot Password
+
+Musicrest does not have these features but this is corrected in tunebank-node.
+
 ## All other POST requests
 
 Tunebank-node requires the body of all other POST requests to be in JSON formay whereas Musicrest required a form-url-encoded body.
