@@ -19,7 +19,7 @@ import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
-import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserPassword, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
+import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Pagination (defaultPaginationExpression)
@@ -106,6 +106,9 @@ userSpec = before_ flushUsers do
         _ <- changeUserPassword user "NewPassword" c
         mPassword <- getUserPassword user c
         mPassword `shouldEqual` Just "NewPassword"
+    it "finds user name by password" do
+      res <- withDBConnection $ getUserName "john.watson@gmx.co.uk"
+      res `shouldEqual` (Just "John")
     
 genreSpec :: Spec Unit
 genreSpec =

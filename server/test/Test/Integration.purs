@@ -45,6 +45,7 @@ getRequestsSpec =
     registerUser
     checkUser
     checkUnknownUser
+    getUserName
 
 
 postRequestsSpec :: Test
@@ -192,7 +193,11 @@ checkUnknownUser =
     responseStatus <- getStatus 8080 unknownAuthHeaders "/user/check"
     responseStatus ?= 401 -- unauthorized
 
-
+getUserName :: Test
+getUserName = 
+  it "gets the user name from her email address" do
+  response <- post 8080 Object.empty "/user/getName" "john.watson@gmx.co.uk"
+  response `shouldEqual` "user name emailed to user: John"
 
 -- POST request tests
 

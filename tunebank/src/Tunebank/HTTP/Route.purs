@@ -34,7 +34,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserRecord, insertUser, validateUser)
+import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUser)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
@@ -44,7 +44,7 @@ import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, decodeUserPasswordOTP, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
-import Tunebank.Tools.Mail (sendRegistrationMail, sendNewPasswordOTPMail)
+import Tunebank.Tools.Mail (sendRegistrationMail, sendNewPasswordOTPMail, sendUserNameMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
 import Yoga.Postgres (Pool, withClient)
 
@@ -62,6 +62,7 @@ data Route
   | UserCheck
   | UserNewPasswordOTP                -- One-Time-Password for a change password request
   | UserNewPassword                   -- The actual change password
+  | UserGetName                       -- Get the user name from the password
   | Users PagingParams
   | User UserName
   | UserValidate String
@@ -111,6 +112,7 @@ route = root $ sum
   , "UserCheck": "user" / "check" / noArgs -- comes first otherwise 'check' taken as user name
   , "UserNewPassword" : "user" / "newPassword" / noArgs -- ditto
   , "UserNewPasswordOTP" : "user" / "newPasswordOTP" / noArgs -- ditto
+  , "UserGetName" : "user" / "getName" / noArgs -- ditto
   , "Users": "user" ?
       { page: optional <<< int
       , sort: optional <<< string
@@ -150,6 +152,8 @@ router { route: UserNewPassword, method: Options, headers } = preflightOptionsRo
 router { route: UserNewPassword, body } = userNewPasswordRoute body
 router { route: UserNewPasswordOTP, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserNewPasswordOTP, body } = userNewPasswordOTPRoute body
+router { route: UserGetName, method: Options, headers } = preflightOptionsRoute headers
+router { route: UserGetName, body } = userGetNameRoute body
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
 router { route: Users _params, method: Post, body } = insertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
@@ -467,6 +471,24 @@ userNewPasswordRoute body = do
       liftAff $ withClient dbpool $ \c -> do
         changeUserPassword (UserName userPassword.name) userPassword.password c
         ok' corsHeadersAllOrigins ("User: " <> userPassword.name <> " password updated.")
+
+
+-- | Get the user name from the email address
+userGetNameRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+userGetNameRoute body = do
+  email <- Body.toString body
+  dbpool :: Pool <- asks _.dbpool
+  mUserName <- liftAff $ withClient dbpool $  do
+    getUserName email
+  case mUserName of 
+    Just userName -> do
+      emailResult <- sendUserNameMail email userName
+      either 
+        customErrorResponse 
+        (const $ ok' corsHeadersAllOrigins ("user name emailed to user: " <> userName))
+        emailResult        
+    Nothing ->
+      customInternalServerError "Email not found"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 preflightOptionsRoute headers = do

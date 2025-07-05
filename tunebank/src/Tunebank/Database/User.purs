@@ -4,6 +4,7 @@ module Tunebank.Database.User
   , assertIsAdministrator
   , deleteUser
   , getUserCount
+  , getUserName
   , getUserPassword
   , getUserRecord
   , getUserRecords
@@ -203,20 +204,20 @@ assertIsAdministrator user c = do
 getUserCount :: Client -> Aff Int
 getUserCount c = do
   -- _ <- liftEffect $ logShow ("trying to count total number of users")
-  matchCount <- queryValue_ singleIntResult (Query "select count(*) from users" :: Query Int) c
-  pure $ maybe 0 identity matchCount
+  mCount <- queryValue_ singleIntResult (Query "select count(*) from users" :: Query Int) c
+  pure $ maybe 0 identity mCount
 
-{-
-getUserName :: String -> Client -> Aff (Maybe String)
-getUserName userName c = do
-  -- _ <- liftEffect $ logShow ("trying to find users of name " <> userName)
-  matchName <- queryValue maybeStringResult (Query "select username from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
-  pure $ join matchName
--}
+getUserName :: Email -> Client -> Aff (Maybe String)
+getUserName email c = do
+  -- _ <- liftEffect $ logShow ("trying to find user name from password " <> email)
+  mName <- queryValue maybeStringResult (Query "select username from users where email = $1" :: Query (Maybe String)) [ toSql email ] c
+  pure $ join mName
 
 getUserPassword :: UserName -> Client -> Aff (Maybe String)
 getUserPassword userName c = do
   -- _ <- liftEffect $ logShow ("trying to find password for user of name " <> (show userName))
-  matchPassword <- queryValue maybeStringResult (Query "select passwd from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
-  pure $ join matchPassword
+  mPassword <- queryValue maybeStringResult (Query "select passwd from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
+  pure $ join mPassword
+
+
 
