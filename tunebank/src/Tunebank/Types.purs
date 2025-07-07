@@ -207,7 +207,7 @@ type UserPasswordOTP =
 -- | update password request
 type UserPassword =
   { name :: String
-  , password :: Password 
+  , password :: Password
   }
 
 type TuneRef =

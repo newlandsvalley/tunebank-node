@@ -22,7 +22,6 @@ import Prelude
 
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..), maybe)
-import Data.Newtype (overF)
 import Effect.Aff (Aff, error)
 import Effect.Class (liftEffect)
 import Effect.Exception (throw, throwException)
@@ -138,8 +137,8 @@ insertUser newUser userValidity c = do
     let
       valid = validity userValidity
       queryText =
-        case mExistingValidity of 
-          Nothing -> 
+        case mExistingValidity of
+          Nothing ->
             ( "insert into users (username, rolename, passwd, email, valid) "
                 <> " values ($1, 'normaluser', $2, $3, $4 )"
                 <> " returning CAST(registrationid AS CHAR(36))"
@@ -149,15 +148,15 @@ insertUser newUser userValidity c = do
                 <> " returning CAST(registrationid AS CHAR(36))"
             )
     -- _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
-    mResult <- case mExistingValidity of 
-      Nothing -> 
+    mResult <- case mExistingValidity of
+      Nothing ->
         queryValue maybeStringResult (Query queryText :: Query (Maybe String))
-                  [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ]
-                  c
-      _ -> 
+          [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ]
+          c
+      _ ->
         queryValue maybeStringResult (Query queryText :: Query (Maybe String))
-                  [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
-                  c
+          [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
+          c
     pure $ note (InternalServerError $ "user creation failed for " <> newUser.name) (join mResult)
 
   where
@@ -218,6 +217,4 @@ getUserPassword userName c = do
   -- _ <- liftEffect $ logShow ("trying to find password for user of name " <> (show userName))
   mPassword <- queryValue maybeStringResult (Query "select passwd from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
   pure $ join mPassword
-
-
 

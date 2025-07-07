@@ -16,7 +16,6 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show.Generic (genericShow)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Console (log, logShow)
 import HTTPurple (Request, Method(..), internalServerError, notFound, ok, ok')
 import HTTPurple.Body (RequestBody)
 import HTTPurple.Body (toString) as Body
@@ -60,9 +59,9 @@ data Route
   | Comments Genre Title
   | Comment Int
   | UserCheck
-  | UserNewPasswordOTP                -- One-Time-Password for a change password request
-  | UserNewPassword                   -- The actual change password
-  | UserGetName                       -- Get the user name from the password
+  | UserNewPasswordOTP -- One-Time-Password for a change password request
+  | UserNewPassword -- The actual change password
+  | UserGetName -- Get the user name from the password
   | Users PagingParams
   | User UserName
   | UserValidate String
@@ -110,9 +109,9 @@ route = root $ sum
       , sort: optional <<< string
       }
   , "UserCheck": "user" / "check" / noArgs -- comes first otherwise 'check' taken as user name
-  , "UserNewPassword" : "user" / "newPassword" / noArgs -- ditto
-  , "UserNewPasswordOTP" : "user" / "newPasswordOTP" / noArgs -- ditto
-  , "UserGetName" : "user" / "getName" / noArgs -- ditto
+  , "UserNewPassword": "user" / "newPassword" / noArgs -- ditto
+  , "UserNewPasswordOTP": "user" / "newPasswordOTP" / noArgs -- ditto
+  , "UserGetName": "user" / "getName" / noArgs -- ditto
   , "Users": "user" ?
       { page: optional <<< int
       , sort: optional <<< string
@@ -433,13 +432,12 @@ validateUserRoute uuid = do
     validateUser uuid
   ok' corsHeadersAllOrigins "validated"
 
-
 -- | Receive the One-Time-Password UUID from the request body and email it to the user if we find her
 userNewPasswordOTPRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
 userNewPasswordOTPRoute body = do
   jsonString <- Body.toString body
   case (decodeUserPasswordOTP jsonString) of
-    Left err -> do 
+    Left err -> do
       -- _ <- liftEffect $ logShow $ "Error decoding JSON " <> (show err)
       customBadRequest $ printJsonDecodeError err
     Right userPasswordOTP -> do
@@ -447,14 +445,14 @@ userNewPasswordOTPRoute body = do
       mUserRecord <- liftAff $ withClient dbpool $ do
         getUserRecord (UserName userPasswordOTP.name)
 
-      case mUserRecord of 
+      case mUserRecord of
         Just userRecord -> do
           emailResult <- sendNewPasswordOTPMail userRecord.email userPasswordOTP.otp
-          either 
-            customErrorResponse 
+          either
+            customErrorResponse
             (const $ ok' corsHeadersAllOrigins ("OTP emailed to user: " <> (show userRecord.username)))
             emailResult
-            
+
         Nothing ->
           customInternalServerError "User not found"
 
@@ -463,7 +461,7 @@ userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody ->
 userNewPasswordRoute body = do
   jsonString <- Body.toString body
   case (decodeUserPassword jsonString) of
-    Left err -> do 
+    Left err -> do
       -- _ <- liftEffect $ logShow $ "Error decoding JSON " <> (show err)
       customBadRequest $ printJsonDecodeError err
     Right userPassword -> do
@@ -472,21 +470,20 @@ userNewPasswordRoute body = do
         changeUserPassword (UserName userPassword.name) userPassword.password c
         ok' corsHeadersAllOrigins ("User: " <> userPassword.name <> " password updated.")
 
-
 -- | Get the user name from the email address
 userGetNameRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
 userGetNameRoute body = do
   email <- Body.toString body
   dbpool :: Pool <- asks _.dbpool
-  mUserName <- liftAff $ withClient dbpool $  do
+  mUserName <- liftAff $ withClient dbpool $ do
     getUserName email
-  case mUserName of 
+  case mUserName of
     Just userName -> do
       emailResult <- sendUserNameMail email userName
-      either 
-        customErrorResponse 
+      either
+        customErrorResponse
         (const $ ok' corsHeadersAllOrigins ("user name emailed to user: " <> userName))
-        emailResult        
+        emailResult
     Nothing ->
       customInternalServerError "Email not found"
 

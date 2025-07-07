@@ -16,9 +16,9 @@ module Tunebank.Logic.Codecs
   , encodeMessage
   ) where
 
-import Prelude
+import Prelude ((=<<))
 
-import Tunebank.Types
+import Tunebank.Types (Comment, Genre, NewComment, NewUser, Rhythm, TuneMetadata, TuneRef, UserPassword, UserPasswordOTP, UserRecord)
 import Tunebank.Pagination (TuneRefsPage, UserRecordsPage)
 
 import Data.Argonaut.Decode (JsonDecodeError, parseJson)

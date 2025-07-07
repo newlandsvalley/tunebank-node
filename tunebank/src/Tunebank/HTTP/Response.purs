@@ -11,7 +11,7 @@ import Prelude
 import Data.Argonaut (stringify)
 import Effect.Aff.Class (class MonadAff)
 import HTTPurple.Json (jsonHeaders)
-import HTTPurple.Response (Response(..), badRequest', response', internalServerError, internalServerError', unauthorized)
+import HTTPurple.Response (Response, badRequest', response', internalServerError, internalServerError', unauthorized)
 import HTTPurple.Status (forbidden) as Status
 import Tunebank.HTTP.Headers (corsHeadersAllOrigins)
 import Tunebank.Logic.Codecs (encodeMessage)

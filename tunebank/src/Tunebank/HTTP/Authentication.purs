@@ -18,7 +18,6 @@ import Data.String.Base64 (decode)
 import Data.String.Pattern (Pattern(..))
 import Effect.Class (liftEffect)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Console (log, logShow)
 import HTTPurple (RequestHeaders)
 import HTTPurple (lookup) as Headers
 import HTTPurple.Response (Response, unauthorized)
