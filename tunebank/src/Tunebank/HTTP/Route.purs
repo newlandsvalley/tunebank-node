@@ -37,7 +37,7 @@ import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser,
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
-import Tunebank.HTTP.Response (customBadRequest, customErrorResponse, customInternalServerError)
+import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
@@ -454,7 +454,7 @@ userNewPasswordOTPRoute body = do
             emailResult
 
         Nothing ->
-          customInternalServerError "User not found"
+          customBadRequest "User not found"
 
 -- | Change the user password.  The frontend is responsible for determining if the OTP password has been validated
 userNewPasswordRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
@@ -485,7 +485,7 @@ userGetNameRoute body = do
         (const $ ok' corsHeadersAllOrigins ("user name emailed to user: " <> userName))
         emailResult
     Nothing ->
-      customInternalServerError "Email not found"
+      customBadRequest "Email not found"
 
 preflightOptionsRoute :: forall m. MonadAff m => MonadAsk Env m => RequestHeaders -> m Response
 preflightOptionsRoute headers = do
