@@ -84,7 +84,10 @@ sendMail toAddress subject text = do
       _ <- liftEffect $ log successText
       _ <- liftEffect $ logInfo logger successText
       when (config.host == "smtp.ethereal.email") do
-        liftEffect $ log $ "You can confirm " <> subject <> " mail at: " <> (show $ getTestMessageUrl info)
+        let 
+          confirmationText = "You can confirm " <> subject <> " mail at: " <> (show $ getTestMessageUrl info)
+        _ <- liftEffect $ log confirmationText
+        liftEffect $ logInfo logger confirmationText
       pure $ Right unit
 
 -- | create an email message 
