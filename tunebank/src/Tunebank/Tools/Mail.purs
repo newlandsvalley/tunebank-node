@@ -7,6 +7,7 @@ module Tunebank.Tools.Mail
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, asks)
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Effect (Effect)
 import Effect.Aff (Aff, catchError)
@@ -85,9 +86,16 @@ sendMail toAddress subject text = do
       _ <- liftEffect $ logInfo logger successText
       when (config.host == "smtp.ethereal.email") do
         let 
-          confirmationText = "You can confirm " <> subject <> " mail at: " <> (show $ getTestMessageUrl info)
-        _ <- liftEffect $ log confirmationText
-        liftEffect $ logInfo logger confirmationText
+          mMessageUrl :: Maybe String 
+          mMessageUrl = getTestMessageUrl info
+        case mMessageUrl of 
+          Just messageUrl -> do
+            let 
+              confirmationText = "You can confirm " <> subject <> " mail at: " <> messageUrl
+            _ <- liftEffect $ log confirmationText
+            liftEffect $ logInfo logger confirmationText
+          Nothing -> 
+            pure unit
       pure $ Right unit
 
 -- | create an email message 

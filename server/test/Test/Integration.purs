@@ -243,7 +243,7 @@ emailUserOTP =
     let 
       userPasswordOTP = """{"name":"TonyBlair","otp":"123-456-789"}"""   
     response <- post 8080 Object.empty "/user/newPasswordOTP" userPasswordOTP
-    response `shouldEqual` "OTP emailed to user: TonyBlair"
+    response `shouldEqual` "A one-time-password (OTP) has been sent to tony@blairfoundation.com."
 
 changeUserPassword :: Test
 changeUserPassword = 

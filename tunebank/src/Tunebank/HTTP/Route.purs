@@ -438,7 +438,6 @@ userNewPasswordOTPRoute body = do
   jsonString <- Body.toString body
   case (decodeUserPasswordOTP jsonString) of
     Left err -> do
-      -- _ <- liftEffect $ logShow $ "Error decoding JSON " <> (show err)
       customBadRequest $ printJsonDecodeError err
     Right userPasswordOTP -> do
       dbpool :: Pool <- asks _.dbpool
@@ -450,7 +449,7 @@ userNewPasswordOTPRoute body = do
           emailResult <- sendNewPasswordOTPMail userRecord.email userPasswordOTP.otp
           either
             customErrorResponse
-            (const $ ok' corsHeadersAllOrigins ("OTP emailed to user: " <> (show userRecord.username)))
+            (const $ ok' corsHeadersAllOrigins ("A one-time-password (OTP) has been sent to " <> userRecord.email <> "."))
             emailResult
 
         Nothing ->
