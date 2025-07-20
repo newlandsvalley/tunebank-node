@@ -14,7 +14,9 @@ import Effect.Aff (Aff, catchError)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import NodeMailer (Message, MessageInfo, Transporter, TransportConfig, createTransporter, getTestMessageUrl, sendMail_)
+import Effect.Exception (Error)
+import Effect.Exception (message) as Exception
+import NodeMailer (Message, MessageInfo, Transporter, TransportConfig, createTransporter, getTestMessageUrl, sendMailMessage)
 import Tunebank.Config (MailConfig)
 import Tunebank.Environment (Env)
 import Tunebank.Logging.Winston (logError, logInfo)
@@ -68,17 +70,19 @@ sendMail toAddress subject text = do
   _ <- liftEffect $ logInfo logger
     ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
 
-  transporter :: Transporter <- liftEffect $ createTransporter transportConfig
+  transporter <- liftEffect $ createTransporter transportConfig
+
   message <- liftEffect $ createMessage toAddress subject text
   eResult <- liftAff $ sendMailMessage message transporter
 
   case eResult of
     Left e -> do
       let
-        errorText = "Sending " <> subject <> " mail message to " <> toAddress <> " failed: " <> show e
+        errorMessage = Exception.message e
+        errorText = "Sending " <> subject <> " mail message to " <> toAddress <> " failed: " <> errorMessage
       _ <- liftEffect $ log errorText
       _ <- liftEffect $ logError logger errorText
-      pure $ Left e
+      pure $ Left $ InternalServerError errorMessage
     Right info -> do
       let
         successText = subject <> " mail message sent to " <> toAddress
@@ -113,19 +117,6 @@ createMessage toAddress subject text = do
     , attachments: []
     }
 
--- | a version of sendMail_ which discriminates berween success and failure
--- | and issues an Internal Server Error on failure
-sendMailMessage :: Message -> Transporter -> Aff (Either ResponseError MessageInfo)
-sendMailMessage message transporter = do
-  mySendMail `catchError` \e -> pure $ Left $ InternalServerError $ show e
-
-  where
-
-  mySendMail :: Aff (Either ResponseError MessageInfo)
-  mySendMail = do
-    info <- sendMail_ message transporter
-    pure $ Right info
-
 -- | build the transport config from the mail section of our server config
 getTransportConfig :: MailConfig -> TransportConfig
 getTransportConfig config =
@@ -133,7 +124,5 @@ getTransportConfig config =
   , port: config.port
   , secure: config.secure
   , auth: config.auth
-  , web: ""
-  , mxEnabled: false
   }
 

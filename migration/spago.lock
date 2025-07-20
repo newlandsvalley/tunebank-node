@@ -57,8 +57,6 @@
             "lcg",
             "lists",
             "literals",
-            "logging",
-            "logging-journald",
             "maybe",
             "midi",
             "newtype",
@@ -662,8 +660,8 @@
         "path": "../args-parser"
       },
       "nodemailer": {
-        "git": "https://github.com/srghma/purescript-nodemailer.git",
-        "ref": "07e273a71ee3b8b4685d0015272810f5c6340d7b"
+        "git": "https://github.com/newlandsvalley/purescript-nodemailer.git",
+        "ref": "92b65310ebb7b214b6cb9f7a5d05ee6cee7defd2"
       },
       "tunebank-node": {
         "path": "../tunebank"
@@ -1337,31 +1335,6 @@
         "unsafe-coerce"
       ]
     },
-    "logging": {
-      "type": "registry",
-      "version": "3.0.0",
-      "integrity": "sha256-qEwoXTujvHH1qGBSK2oT8RryLVpMKDHMMorryv01F7M=",
-      "dependencies": [
-        "console",
-        "contravariant",
-        "effect",
-        "either",
-        "prelude",
-        "transformers",
-        "tuples"
-      ]
-    },
-    "logging-journald": {
-      "type": "registry",
-      "version": "0.4.0",
-      "integrity": "sha256-laYABfyQ7EkeeJTnBIEvDlz+VrkrsC//umczEkNPi3I=",
-      "dependencies": [
-        "effect",
-        "logging",
-        "prelude",
-        "systemd-journald"
-      ]
-    },
     "maybe": {
       "type": "registry",
       "version": "6.0.0",
@@ -1575,16 +1548,18 @@
     },
     "nodemailer": {
       "type": "git",
-      "url": "https://github.com/srghma/purescript-nodemailer.git",
-      "rev": "07e273a71ee3b8b4685d0015272810f5c6340d7b",
+      "url": "https://github.com/newlandsvalley/purescript-nodemailer.git",
+      "rev": "92b65310ebb7b214b6cb9f7a5d05ee6cee7defd2",
       "dependencies": [
         "aff",
-        "console",
         "effect",
-        "node-fs",
+        "foreign",
+        "functions",
+        "maybe",
         "node-streams",
         "prelude",
-        "simple-json"
+        "simple-json",
+        "unsafe-coerce"
       ]
     },
     "nonempty": {
@@ -2058,7 +2033,6 @@
         "foldable-traversable",
         "httpurple",
         "integers",
-        "logging-journald",
         "newtype",
         "node-buffer",
         "node-fs",

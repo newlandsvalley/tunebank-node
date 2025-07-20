@@ -14,8 +14,8 @@ workspace:
       git: https://github.com/nsaunders/purescript-yaml-next.git
       ref: 478e170d26467a63f67fed8c69355aa980049418
     nodemailer:
-      git: https://github.com/srghma/purescript-nodemailer.git
-      ref: 07e273a71ee3b8b4685d0015272810f5c6340d7b
+      git: https://github.com/newlandsvalley/purescript-nodemailer.git
+      ref: 92b65310ebb7b214b6cb9f7a5d05ee6cee7defd2
     args-parser: 
       path: ../args-parser
     tunebank-node:

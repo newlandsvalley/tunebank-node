@@ -375,7 +375,7 @@ checkUserRoute headers = do
         liftEffect $ logInfo logger $ "login for " <> show auth.user
         pure unit
       Left err -> do
-        liftEffect $ logError logger $ "login failure " <> show err
+        liftEffect $ logError logger $ "login failure " <> err
         pure unit
     either (const unauthorized) (\auth -> ok' corsHeadersAllOrigins auth.role) eAuth
 

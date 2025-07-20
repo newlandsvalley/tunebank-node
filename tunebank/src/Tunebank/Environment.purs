@@ -1,7 +1,6 @@
 module Tunebank.Environment where
 
 import Prelude
-import Effect.Console (log) as Console
 import Effect (Effect)
 import Tunebank.Config (TunebankConfig, MailConfig, PagingConfig, ServerConfig)
 import Tunebank.Logging.Winston (Logger, createLogger)

@@ -69,7 +69,7 @@ validateCredentials credentials c = do
     params = [ toSql credentials.user, toSql credentials.password ]
   -- _ <- liftEffect $ logShow ("trying to match " <> user)
   mAuth <- queryOne read' (Query queryText :: Query (Maybe Authorization)) params c
-  pure $ note ("Invalid credentials: " <> (show credentials.user)) (join mAuth)
+  pure $ note ("Invalid credentials: " <> credentials.user) (join mAuth)
 
 checkKnownUser :: UserName -> Client -> Aff (Either String UserName)
 checkKnownUser user c = do
