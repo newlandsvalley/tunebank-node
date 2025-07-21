@@ -16,7 +16,7 @@ import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Effect.Exception (Error)
 import Effect.Exception (message) as Exception
-import NodeMailer (Message, MessageInfo, Transporter, TransportConfig, createTransporter, getTestMessageUrl, sendMailMessage)
+import NodeMailer (Message, TransportConfig, createTestAccount, createTransporter, getTestMessageUrl, sendMailMessage)
 import Tunebank.Config (MailConfig)
 import Tunebank.Environment (Env)
 import Tunebank.Logging.Winston (logError, logInfo)
@@ -61,9 +61,7 @@ sendMail :: forall m. MonadAff m => MonadAsk Env m => Email -> String -> String 
 sendMail toAddress subject text = do
   logger <- asks _.logger
   config :: MailConfig <- asks _.mail
-
-  let
-    transportConfig = getTransportConfig config
+  transportConfig <- liftAff $ getTransportConfig config
 
   _ <- liftEffect $ log ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
 
@@ -117,12 +115,19 @@ createMessage toAddress subject text = do
     , attachments: []
     }
 
--- | build the transport config from the mail section of our server config
-getTransportConfig :: MailConfig -> TransportConfig
+-- | Build the transport config from the mail section of our server config.
+-- | If the email server is ethereal, this is a test environment and so 
+-- | ignore the config and just return the nodemailer test account
+getTransportConfig :: MailConfig -> Aff TransportConfig
 getTransportConfig config =
-  { host: config.host
-  , port: config.port
-  , secure: config.secure
-  , auth: config.auth
-  }
+  if (config.host == "smtp.ethereal.email") 
+    then 
+      createTestAccount
+    else 
+      pure $
+        { host: config.host
+        , port: config.port
+        , secure: config.secure
+        , auth: config.auth
+        }
 

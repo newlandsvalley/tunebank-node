@@ -30,7 +30,11 @@ The postgres SQL scripts that initialise the test database include the DDL state
 
 ## Configuration
 
-Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` and `importation/conf` directories).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. The `mail` section allows connection only to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section uses a randonly generated user and password which has been pre-registered with ethereal. (SMTP is used only to complete new user registration). This prototype file should be renamed to `tunebank.conf` before testing.
+Configuration is by means of `tunebank.conf` in the `server/conf` directory  (and also needed in the `migration/conf` and `importation/conf` directories).  This is provided as `prototype-tunebank.conf` and uses the `test_database_user` as described above. 
+
+The `mail` section allows connection to [ethereal](https://ethereal.email/) which is a fake SMTP service suitable for testing purposes only. The mail authorization section describes a randonly generated user and password but this is not used. If the mail host is set to `smtp.ethereal.email` then a testing environment is assumed and mail is issued to a standard ethereal testing address. (SMTP is used only in creation of or updates to user registration). 
+
+The prototype file should be renamed to `tunebank.conf` before testing.
 
 ## Reliance on a Reverse Proxy
 
