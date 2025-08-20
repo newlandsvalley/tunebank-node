@@ -62,10 +62,10 @@ sendMail toAddress subject text = do
   config :: MailConfig <- asks _.mail
   transportConfig <- liftAff $ getTransportConfig config
 
-  _ <- liftEffect $ log ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
+  _ <- liftEffect $ log ("trying to email user at " <> toAddress)
 
   _ <- liftEffect $ logInfo logger
-    ("trying to email user at " <> toAddress <> " using email provider " <> config.auth.user <> " pw: " <> config.auth.pass)
+    ("trying to email user at " <> toAddress)
 
   transporter <- liftEffect $ createTransporter transportConfig
 
