@@ -1,7 +1,7 @@
 workspace:
   packageSet:
-    registry: 63.9.1
-  extraPackages:  
+    registry: 66.3.0
+  extraPackages:
     yaml-next:
       dependencies:
         - argonaut-codecs
@@ -16,7 +16,7 @@ workspace:
     nodemailer:
       git: https://github.com/newlandsvalley/purescript-nodemailer.git
       ref: 92b65310ebb7b214b6cb9f7a5d05ee6cee7defd2
-    args-parser: 
+    args-parser:
       path: ../args-parser
     tunebank-node:
       path: ../tunebank

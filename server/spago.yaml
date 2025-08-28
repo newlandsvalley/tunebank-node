@@ -1,7 +1,7 @@
 workspace:
   packageSet:
-    registry: 63.9.1
-  extraPackages:  
+    registry: 66.3.0
+  extraPackages:
     httpurple:
       git: https://github.com/newlandsvalley/purescript-httpurple.git
       ref: c37b349b0399ab006e808db9e5865fbe890589ad
@@ -19,9 +19,6 @@ workspace:
     nodemailer:
       git: https://github.com/newlandsvalley/purescript-nodemailer.git
       ref: 92b65310ebb7b214b6cb9f7a5d05ee6cee7defd2
-    abc-parser:
-      git: https://github.com/newlandsvalley/purescript-abc-parser.git
-      ref: 40aa24aa8a2fdf9aa6298175554fa4b67b1afbc4
     tunebank-node:
       path: ../tunebank
 package:
@@ -36,4 +33,3 @@ package:
       - formatters
       - spec
       - spec-node
-    

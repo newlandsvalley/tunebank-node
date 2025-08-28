@@ -3,7 +3,7 @@ module Tunebank.Database.Search where
 import Prelude
 
 import Data.Abc (KeySignature)
-import Data.Abc.Canonical (keySignatureAccidental)
+import Data.Abc.Canonical (keySignatureAccidental, normaliseKey)
 import Data.Abc.Parser (parseKeySignature)
 import Data.Array (fold)
 import Data.Either (Either(..))
@@ -76,16 +76,11 @@ normaliseKeySignature s =
   case (parseKeySignature s) of
     -- try to normalise if we can
     Right mks ->
-      normalise mks.keySignature
+      normaliseKey mks.keySignature
     -- otherwise leave it alone, meaning search on key will fail
     _ ->
       s
-  where
-
-  normalise :: KeySignature -> String
-  normalise k =
-    show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
-
+      
 -- | search params as they arrive from the request
 type SearchParams =
   { title :: Maybe String

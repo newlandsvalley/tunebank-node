@@ -1,7 +1,7 @@
 workspace:
   packageSet:
-    registry: 63.9.1
-  extraPackages:  
+    registry: 66.3.0
+  extraPackages:
     yaml-next:
       dependencies:
         - argonaut-codecs
