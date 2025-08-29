@@ -165,7 +165,7 @@ router { route: CatchAll paths } = routeError paths
 
 homeRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 homeRoute = do
-  ok' corsHeadersAllOrigins ("tunebank 0.0.1")
+  ok' corsHeadersAllOrigins ("tunebank 0.1.0")
 
 genreRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 genreRoute = do
