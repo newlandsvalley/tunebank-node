@@ -105,9 +105,11 @@ Migration uses a naturalistic command line.  For example:
 
 ## Export as JSON
 
-Excellent facilities exist within postgres to export data as rows of JSON records.  The `export` directory contains example scripts that can be run via `psql` and which respectively export users, Scandi tunes and Scandi comments.  These can be used to export all tunebank data in a format suitable for later import.
+Excellent facilities exist within postgres to export data as rows of JSON records.  The `export` directory contains example scripts that can be run via `psql` and which respectively export users, Scandi tunes and Scandi comments.  These can be used to export all tunebank data in a format suitable for later import. These script use the postgres `COPY` command which requires an absolute path to each exported file name.
 
 The only downside is that postgres prefaces escape sequences such as `"\n"` with a further backslash.  This particularly affects tune ABC and comments and has to be cleaned up by the importer.
+
+Three bash script examples are also included in the export directory.  To use these, edit each script to indicate the database name, the database user (who will require the `pg_write_server_files` privilege) and the full path to the exported file name.
 
 ## Import of exported JSON files
 
