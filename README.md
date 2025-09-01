@@ -46,7 +46,7 @@ Logging is via `Winston` and the `Winston daily rotate file` module and writes t
 
 ## Building and Running
 
-  * Install libsystemd and all the npm dependencies
+  * Install all the npm dependencies
 
   * to build the server - `npm run build-server`
   * to bundle the server - `npm run bundle-server`
