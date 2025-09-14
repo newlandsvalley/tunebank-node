@@ -12,13 +12,17 @@ import HTTPurple.Headers (ResponseHeaders, headers)
 
 -- | Custom response headers
 
--- | ABC content type
-abcHeaders :: ResponseHeaders
-abcHeaders = headers { "Content-Type": "text/vnd.abc" }
+-- | ABC content type together with a suggestion for the download file name
+abcHeaders :: String -> ResponseHeaders
+abcHeaders fileName = 
+  headers { "Content-Type": "text/vnd.abc" }
+    <> utf8ContentDispositionHeaders fileName
 
--- | MIDI content type
-midiHeaders :: ResponseHeaders
-midiHeaders = headers { "Content-Type": "audio/midi" }
+-- | MIDI content type together with a suggestion for the download file name
+midiHeaders :: String -> ResponseHeaders
+midiHeaders fileName =
+  headers { "Content-Type": "audio/midi" }
+    <> simpleContentDispositionHeaders fileName
 
 -- | Basic access request (Get etc) from any javascript HTTPRequest
 corsHeadersAllOrigins :: ResponseHeaders
@@ -70,4 +74,21 @@ corsAllowAuthorization =
 corsMaxAge :: ResponseHeaders
 corsMaxAge =
   headers { "Access-Control-Allow-Max-Age": "86400" }
+
+-- | simple content disposition headers suggesting a download file of the given name
+simpleContentDispositionHeaders :: String -> ResponseHeaders
+simpleContentDispositionHeaders fileName = 
+  let 
+    headerValue = "attachment; filename=" <> fileName
+  in
+    headers { "Content-Disposition": headerValue }
+
+-- | content disposition headers suggesting a download file of type UTF-8 with the given name
+utf8ContentDispositionHeaders :: String -> ResponseHeaders
+utf8ContentDispositionHeaders fileName = 
+  let 
+    headerValue = "attachment; filename*=UTF-8''" <> fileName
+  in
+    headers { "Content-Disposition": headerValue }
+
 

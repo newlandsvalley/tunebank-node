@@ -165,7 +165,7 @@ router { route: CatchAll paths } = routeError paths
 
 homeRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 homeRoute = do
-  ok' corsHeadersAllOrigins ("tunebank 0.1.0")
+  ok' corsHeadersAllOrigins ("tunebank 0.1.1")
 
 genreRoute :: forall m. MonadAff m => MonadAsk Env m => m Response
 genreRoute = do
@@ -208,7 +208,10 @@ tuneAbcRoute genre title = do
   dbpool :: Pool <- asks _.dbpool
   mTune <- liftAff $ withClient dbpool $ do
     getTuneAbc genre title
-  maybe notFound (ok' (abcHeaders <> corsHeadersAllOrigins)) mTune
+  maybe notFound (ok' (abcHeaders suggestedFileName <> corsHeadersAllOrigins )) mTune
+
+  where
+    suggestedFileName = (show title) <> ".abc"
 
 tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 tuneRoute genre title = do
@@ -224,7 +227,10 @@ tuneMidiRoute genre title = do
   dbpool :: Pool <- asks _.dbpool
   eMidi <- liftAff $ withClient dbpool $ do
     getTuneMidi genre title
-  either customErrorResponse (ok' midiHeaders) eMidi
+  either customErrorResponse (ok' (midiHeaders suggestedFileName)) eMidi
+
+  where
+    suggestedFileName = (show title) <> ".midi"
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do

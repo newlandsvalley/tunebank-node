@@ -13,7 +13,7 @@ import Effect.Class (liftEffect)
 import Effect.Console (logShow)
 import Foreign.Object (Object)
 import Foreign.Object (empty, singleton) as Object
-import Test.HTTPurple.TestHelpers (Test, awaitStarted, delete, get, getStatus, post, (?=))
+import Test.HTTPurple.TestHelpers (Test, awaitStarted, delete, get, getHeader, getStatus, post, (?=))
 import Test.Spec (before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 import Test.Spec.Assertions.String (shouldStartWith)
@@ -81,7 +81,7 @@ getHome =
     awaitStarted 8080
     response <- get 8080 Object.empty "/"
     -- liftEffect $ close $ pure unit
-    response ?= "tunebank 0.0.1"
+    response ?= "tunebank 0.1.1"
 
 getGenres :: Test
 getGenres =
@@ -103,9 +103,13 @@ getTuneAbc :: Test
 getTuneAbc =
   it "finds tune abc route" do
     awaitStarted 8080
+    contentDispositionHeader <- getHeader 8080 Object.empty "/genre/scandi/tune/Elverumspols/abc" "Content-Disposition"
+    contentTypeHeader <- getHeader 8080 Object.empty "/genre/scandi/tune/Elverumspols/abc" "Content-Type"
     response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols/abc"
     response `shouldStartWith` "X: 1"
     response `shouldSatisfy` contains (Pattern "Elverumspols")
+    contentDispositionHeader `shouldSatisfy` contains (Pattern "Elverumspols.abc")
+    contentTypeHeader `shouldSatisfy` contains (Pattern "text/vnd.abc")
 
 
 getTuneMetadata :: Test
@@ -119,9 +123,13 @@ getTuneMidi :: Test
 getTuneMidi =
   it "finds tune MIDI route" do
     awaitStarted 8080
+    contentDispositionHeader <- getHeader 8080 Object.empty "/genre/scandi/tune/Elverumspols/midi" "Content-Disposition"
+    contentTypeHeader <- getHeader 8080 Object.empty "/genre/scandi/tune/Elverumspols/midi" "Content-Type"
     response <- get 8080 Object.empty "/genre/scandi/tune/Elverumspols/midi"
     response `shouldStartWith` "MTh"
     -- response `shouldSatisfy` contains (Pattern "Elverumspols")
+    contentDispositionHeader `shouldSatisfy` contains (Pattern "Elverumspols.midi")
+    contentTypeHeader `shouldSatisfy` contains (Pattern "audio/midi")
 
 
 getComments :: Test
