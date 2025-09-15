@@ -42,6 +42,6 @@ runServer config = do
     Console.log " │                                       │"
     Console.log " │ To test, run:                         │"
     Console.log " │  > curl -v localhost:8080             │"
-    Console.log " │    # => tunebank 0.0.1                │"
+    Console.log " │    # => tunebank 0.1.1                │"
     Console.log " └───────────────────────────────────────┘"
 

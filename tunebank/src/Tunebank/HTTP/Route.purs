@@ -42,6 +42,7 @@ import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Logging.Winston (logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, decodeUserPasswordOTP, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
+import Tunebank.Logic.Naming (safeFileName)
 import Tunebank.Pagination (TuneRefsPage, PagingParams, buildPaginationExpression, buildSearchPaginationExpression)
 import Tunebank.Tools.Mail (sendRegistrationMail, sendNewPasswordOTPMail, sendUserNameMail)
 import Tunebank.Types (Authorization, Genre, Rhythm, Title, TuneMetadata, UserName(..))
@@ -211,7 +212,7 @@ tuneAbcRoute genre title = do
   maybe notFound (ok' (abcHeaders suggestedFileName <> corsHeadersAllOrigins )) mTune
 
   where
-    suggestedFileName = (show title) <> ".abc"
+    suggestedFileName = (safeFileName $ show title) <> ".abc"
 
 tuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
 tuneRoute genre title = do
@@ -230,7 +231,7 @@ tuneMidiRoute genre title = do
   either customErrorResponse (ok' (midiHeaders suggestedFileName)) eMidi
 
   where
-    suggestedFileName = (show title) <> ".midi"
+    suggestedFileName = (safeFileName $ show title) <> ".midi"
 
 deleteTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> RequestHeaders -> m Response
 deleteTuneRoute genre title headers = do

@@ -10,6 +10,7 @@ import Test.Spec (describe)
 import Test.Database (databaseSpec, rebuildDB)
 import Test.Authorization (authorizationSpec)
 import Test.Integration (integrationSpec)
+import Test.Naming (namingSpec)
 
 main :: Effect Unit
 main = do 
@@ -22,5 +23,6 @@ runSpec _ =
     describe "all tunebank tests" do
       databaseSpec
       authorizationSpec
+      namingSpec
       integrationSpec
 
