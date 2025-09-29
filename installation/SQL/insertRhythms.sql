@@ -1,3 +1,5 @@
+
+INSERT INTO rhythms VALUES ('english', 'barndance');
 INSERT INTO rhythms VALUES ('english', 'hornpipe');
 INSERT INTO rhythms VALUES ('english', 'jig');
 INSERT INTO rhythms VALUES ('english', 'march');
