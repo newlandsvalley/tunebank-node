@@ -96,7 +96,7 @@ getRhythms =
     awaitStarted 8080
     response <- get 8080 Object.empty "/genre/scandi/rhythm"
     response ?= """{"rhythm":["brudmarsch","engelska","gånglåt","halling","hambo","långdans",""" <> 
-      """"marsch","polka","polska","schottis","sekstur","skänklåt","slängpolska","waltz"]}"""  
+      """"marsch","polka","polska","schottis","sekstur","skänklåt","slängpolska","sønderhoning","waltz"]}"""  
 
 
 getTuneAbc :: Test

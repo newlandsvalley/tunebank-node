@@ -128,7 +128,7 @@ rhythmSpec =
       res `shouldEqual` true
     it "retrieves all the scandi rhythms" do
       genres <- withDBConnection $ getRhythmStrings (Genre "scandi")
-      length genres `shouldEqual` 14
+      length genres `shouldEqual` 15
 
 tuneSpec :: Spec Unit
 tuneSpec =
