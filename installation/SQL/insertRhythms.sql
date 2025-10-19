@@ -52,6 +52,7 @@ INSERT INTO rhythms VALUES ('scandi', 'schottis');
 INSERT INTO rhythms VALUES ('scandi', 'sekstur');
 INSERT INTO rhythms VALUES ('scandi', 'skänklåt');
 INSERT INTO rhythms VALUES ('scandi', 'slängpolska');
+INSERT INTO rhythms VALUES ('scandi', 'sønderhoning');
 INSERT INTO rhythms VALUES ('scandi', 'waltz');
 
 
