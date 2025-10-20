@@ -22,6 +22,7 @@ import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, 
 import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
+import Tunebank.Logging.Winston (createLogger)
 import Tunebank.Pagination (defaultPaginationExpression)
 import Tunebank.Tools.Loader (uploadTunes)
 import Tunebank.Types (Genre(..), Rhythm(..), Title(..), UserName(..), NewUser, Role(..))
@@ -268,13 +269,14 @@ searchSpec =
 rebuildDB :: Aff Unit 
 rebuildDB = do 
   _ <- liftEffect $ log "REBUILDING THE DATABASE"
+  logger <- liftEffect $ createLogger "logs"
   withDBConnection $ \c -> do 
     -- delete all comments
     _ <- deleteAllComments c
     -- delete all Scandi tunes
     _ <- deleteAllScandiTunes c
     -- upload the Scandi tunes in the abc-samples directory
-    _ <- uploadTunes (Genre "scandi") "./test-data/abc-samples" c
+    _ <- uploadTunes (Genre "scandi") "./test-data/abc-samples" logger c
     insertTwoComments c
 
 -- to be run before the user tests

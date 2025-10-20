@@ -21,17 +21,18 @@ import Tunebank.Database.User (getUserRecords, getUserCount)
 import Tunebank.Database.Search (SearchExpression)
 import Tunebank.Types (Authorization, Genre, Title, TimestampString)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
+import Tunebank.Logging.Winston (Logger)
 import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPage, UserRecordsPage)
 import Tunebank.HTTP.Response (ResponseError(..))
 
 -- | upsert a tune - insert or update the database as appropriate
 -- | this is used by the loader to load ABC samples for the unit tests
-upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Aff (Either ResponseError String)
-upsertValidatedTune auth c genre tuneString =
+upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Logger -> Aff (Either ResponseError String)
+upsertValidatedTune auth c genre tuneString logger =
   -- make sure the tune is terminated before we parse it
   case (buildMetadata (tuneString <> "\n")) of
     Right abcMetadata -> do
-      upsertTune genre auth abcMetadata c
+      upsertTune genre auth abcMetadata logger c
     Left err -> do
       pure $ Left $ BadRequest err
 

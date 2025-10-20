@@ -5,6 +5,7 @@ import Prelude
 import Data.Maybe (Maybe(..), maybe)
 import Data.Either (Either(..))
 import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 import Yoga.Postgres (Query(Query), Client, query_, queryOne, queryValue, queryValue_, execute)
 import Yoga.Postgres.SqlValue (toSql)
 
@@ -14,6 +15,7 @@ import Tunebank.Types (Authorization, UserName(..), TimestampString, Title(..), 
 import Tunebank.Database.Search (SearchExpression, buildSearchExpressionString)
 import Tunebank.Database.User (getUserRole)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult, read', singleIntResult)
+import Tunebank.Logging.Winston (Logger, logInfo)
 import Tunebank.HTTP.Response (ResponseError(..))
 
 -- | insert a tune to the database, allowing the database to add the timestamp
@@ -74,25 +76,32 @@ getTuneId genre title c = do
   mId <- queryValue maybeIntResult (Query query :: Query (Maybe Int)) params c
   pure $ join mId
 
--- | upsert a tune, allowing the database to add the timestamp
-upsertTune :: Genre -> Authorization -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
-upsertTune genre auth vAbc c = do
+-- | upsert a tune, allowing the database to add the timestamp if it's a new tune
+upsertTune :: Genre -> Authorization -> ValidatedAbc -> Logger -> Client -> Aff (Either ResponseError String)
+upsertTune genre auth vAbc logger c = do
   -- userRole <- getUserRole user c
   mOwner <- getTuneOwner genre (Title vAbc.title) c
   result <- case mOwner of
     (Just owner) ->
       if (auth.user == owner || isAdministrator auth.role) then do
         title <- updateTune genre vAbc c
+        let 
+          text = "attempt to update " <> (show genre) <> " tune " <> title
+        _ <- liftEffect $ logInfo logger $ text
         pure $ Right title
       else
         pure $ Left $ Forbidden "Only the original tune submitter or an administrator can update a tune"
     _ -> do
       title <- insertTune genre auth.user vAbc c
+      let 
+        text = "attempt to insert new " <> (show genre) <> " tune " <> title
+      _ <- liftEffect $ logInfo logger $ text
       pure $ Right title
 
   pure result
 
 -- | upset a tune where we supply the timestamp for insert - useful for migration
+-- | we won't bother logging this
 upsertTuneWithTs :: Genre -> Authorization -> TimestampString -> ValidatedAbc -> Client -> Aff (Either ResponseError String)
 upsertTuneWithTs genre auth timestamp vAbc c = do
   -- userRole <- getUserRole user c

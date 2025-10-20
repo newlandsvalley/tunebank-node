@@ -39,7 +39,7 @@ import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, w
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
 import Tunebank.HTTP.Response (customBadRequest, customErrorResponse)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
-import Tunebank.Logging.Winston (logError, logInfo)
+import Tunebank.Logging.Winston (Logger, logError, logInfo)
 import Tunebank.Logic.Api (getTuneMidi, getTuneRefsPage, getUserRecordsPage)
 import Tunebank.Logic.Codecs (decodeNewUser, decodeNewComment, decodeUserPassword, decodeUserPasswordOTP, encodeComments, encodeComment, encodeGenres, encodeRhythms, encodeTuneMetadata, encodeTunesPage, encodeUserRecordsPage, encodeUserRecord)
 import Tunebank.Logic.Naming (safeFileName)
@@ -249,6 +249,7 @@ deleteTuneRoute genre title headers = do
 upsertTuneRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> RequestHeaders -> RequestBody -> m Response
 upsertTuneRoute genre headers body = do
   dbpool :: Pool <- asks _.dbpool
+  logger :: Logger <- asks _.logger
   let
     mOrigin = lookup headers "origin"
   acceptableOrigin <- validateCorsOrigin mOrigin
@@ -260,7 +261,7 @@ upsertTuneRoute genre headers body = do
         Left error -> do
           customBadRequest error
         Right validatedAbc -> do
-          eResult <- upsertTune genre auth validatedAbc c
+          eResult <- upsertTune genre auth validatedAbc logger c
           either customErrorResponse (ok' (corsHeadersOrigin acceptableOrigin)) eResult
 
 commentsRoute :: forall m. MonadAff m => MonadAsk Env m => Genre -> Title -> m Response
