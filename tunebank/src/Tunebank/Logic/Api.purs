@@ -25,6 +25,7 @@ import Tunebank.Pagination (PaginationExpression, PaginationResponse, TuneRefsPa
 import Tunebank.HTTP.Response (ResponseError(..))
 
 -- | upsert a tune - insert or update the database as appropriate
+-- | this is used by the loader to load ABC samples for the unit tests
 upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Aff (Either ResponseError String)
 upsertValidatedTune auth c genre tuneString =
   -- make sure the tune is terminated before we parse it
@@ -35,7 +36,7 @@ upsertValidatedTune auth c genre tuneString =
       pure $ Left $ BadRequest err
 
 -- | upsert a tune together with a timestamp - insert or update the database as appropriate
--- | useful for migration
+-- | this is useful for migration
 upsertValidatedTuneWithTs :: Authorization -> Client -> Genre -> TimestampString -> String -> Aff (Either ResponseError String)
 upsertValidatedTuneWithTs auth c genre timestamp tuneString =
   -- make sure the tune is terminated before we parse it

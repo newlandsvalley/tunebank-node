@@ -28,18 +28,16 @@ insertTune genre user vAbc c = do
   _ <- execute (Query query) params c
   pure vAbc.title
 
--- | update a tune in the database
+-- | update a tune in the database using the primary key
 updateTune :: Genre -> ValidatedAbc -> Client -> Aff String
 updateTune genre vAbc c = do
   let
     query = "update tunes set "
-      <> " keysig = $1, composer = $2, origin = $3, source = $4, transcriber = $5, abc = $6 "
-      <>
-        " where genre = $7 and rhythm = $8 and title = $9"
-    params = [ toSql vAbc.keysig, toSql vAbc.composer, toSql vAbc.origin ]
+      <> " rhythm = $1, keysig = $2, composer = $3, origin = $4, source = $5, transcriber = $6, abc = $7 "
+      <> " where genre = $8 and title = $9"
+    params = [ toSql vAbc.rhythm, toSql vAbc.keysig, toSql vAbc.composer, toSql vAbc.origin ]
       <> [ toSql vAbc.source, toSql vAbc.transcriber, toSql vAbc.abc ]
-      <>
-        [ toSql genre, toSql vAbc.rhythm, toSql vAbc.title ]
+      <> [ toSql genre, toSql vAbc.title ]
   -- _ <- liftEffect $ logShow ("trying to update tune " <> vAbc.title)
   _ <- execute (Query query) params c
   pure vAbc.title
