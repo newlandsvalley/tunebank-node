@@ -3,12 +3,9 @@ module Test.Validation where
 import Prelude
 
 import Data.Either (Either(..), isRight)
-import Effect (Effect)
-import Test.Spec.Reporter (specReporter)
-import Test.Spec.Runner.Node (runSpecAndExitProcess)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
-import Test.Utils (fastan, withDBConnection)
+import Test.Utils (backslashTitle, fastan, withDBConnection)
 import Tunebank.Logic.AbcMetadata (buildMetadata)
 import Tunebank.Types (Genre(..))
 
@@ -22,3 +19,6 @@ validationSpec =
     it "rejects a tune with an invalid rhythm for the genre" do
       res <- withDBConnection $ buildMetadata fastan (Genre "irish")
       res `shouldEqual` (Left "Unknown rhythm: polska for the irish genre")
+    it "rejects a tune with a title containing a backslash" do
+      res <- withDBConnection $ buildMetadata backslashTitle (Genre "scandi")
+      res `shouldEqual` (Left "Please use Unicode for all titles and don't use backslashes - you have submitted new\\tune")

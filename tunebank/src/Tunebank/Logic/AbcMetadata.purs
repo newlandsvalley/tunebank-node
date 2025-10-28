@@ -16,8 +16,9 @@ import Data.Maybe (Maybe(..))
 import Data.Validation.Semigroup (V, invalid, toEither)
 import Data.Lens.Fold (firstOf)
 import Data.Lens.Traversal (traversed)
-import Data.String (joinWith)
+import Data.String (contains, joinWith)
 import Data.String.Common (toLower, trim)
+import Data.String.Pattern (Pattern(..))
 import Effect.Aff (Aff)
 import Tunebank.Types (Genre, Rhythm(..))
 import Tunebank.Database.Rhythm (validateRhythmForGenre)
@@ -103,7 +104,11 @@ buildMetadata abc genre c = do
   validateTitle :: Maybe String -> V Errors String
   validateTitle Nothing = invalid [ "title cannot be empty" ]
   validateTitle (Just "") = invalid [ "title cannot be empty" ]
-  validateTitle (Just value) = pure $ value
+  validateTitle (Just value) = 
+    if (contains (Pattern "\\")) value then 
+      invalid [ "Please use Unicode for all titles and don't use backslashes - you have submitted " <> value ]
+    else
+      pure value
 
   normalisedKeysig :: Maybe ModifiedKeySignature -> V Errors String
   normalisedKeysig Nothing = invalid [ "key signature cannot be empty" ]
