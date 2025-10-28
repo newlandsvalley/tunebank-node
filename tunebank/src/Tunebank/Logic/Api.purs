@@ -28,9 +28,10 @@ import Tunebank.HTTP.Response (ResponseError(..))
 -- | upsert a tune - insert or update the database as appropriate
 -- | this is used by the loader to load ABC samples for the unit tests
 upsertValidatedTune :: Authorization -> Client -> Genre -> String -> Logger -> Aff (Either ResponseError String)
-upsertValidatedTune auth c genre tuneString logger =
-  -- make sure the tune is terminated before we parse it
-  case (buildMetadata (tuneString <> "\n")) of
+upsertValidatedTune auth c genre tuneString logger = do 
+  -- make sure the tune is terminated before we parse it in building the ABC metadata
+  eMetadata <- buildMetadata (tuneString <> "\n") genre c
+  case eMetadata of
     Right abcMetadata -> do
       upsertTune genre auth abcMetadata logger c
     Left err -> do
@@ -39,9 +40,10 @@ upsertValidatedTune auth c genre tuneString logger =
 -- | upsert a tune together with a timestamp - insert or update the database as appropriate
 -- | this is useful for migration
 upsertValidatedTuneWithTs :: Authorization -> Client -> Genre -> TimestampString -> String -> Aff (Either ResponseError String)
-upsertValidatedTuneWithTs auth c genre timestamp tuneString =
-  -- make sure the tune is terminated before we parse it
-  case (buildMetadata (tuneString <> "\n")) of
+upsertValidatedTuneWithTs auth c genre timestamp tuneString = do
+  -- make sure the tune is terminated before we parse it in building the ABC metadata
+  eMetadata <- buildMetadata (tuneString <> "\n") genre c
+  case eMetadata of
     Right abcMetadata -> do
       upsertTuneWithTs genre auth timestamp abcMetadata c
     Left err -> do

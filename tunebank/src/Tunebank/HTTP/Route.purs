@@ -257,7 +257,8 @@ upsertTuneRoute genre headers body = do
     eAuth :: Either String Authorization <- getAuthorization headers c
     withAnyAuthorization eAuth $ \auth -> do
       abc <- Body.toString body
-      case (buildMetadata abc) of
+      eMetadata <- buildMetadata abc genre c
+      case eMetadata of
         Left error -> do
           customBadRequest error
         Right validatedAbc -> do

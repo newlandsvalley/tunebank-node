@@ -11,6 +11,7 @@ import Test.Database (databaseSpec, rebuildDB)
 import Test.Authorization (authorizationSpec)
 import Test.Integration (integrationSpec)
 import Test.Naming (namingSpec)
+import Test.Validation (validationSpec)
 
 main :: Effect Unit
 main = do 
@@ -24,5 +25,6 @@ runSpec _ =
       databaseSpec
       authorizationSpec
       namingSpec
+      validationSpec
       integrationSpec
 
