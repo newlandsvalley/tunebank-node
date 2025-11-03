@@ -19,6 +19,7 @@ INSERT INTO rhythms VALUES ('irish', 'polka');
 INSERT INTO rhythms VALUES ('irish', 'reel');
 INSERT INTO rhythms VALUES ('irish', 'slide');
 INSERT INTO rhythms VALUES ('irish', 'slip jig');
+INSERT INTO rhythms VALUES ('irish', 'slow air');
 INSERT INTO rhythms VALUES ('irish', 'waltz');
 
 
