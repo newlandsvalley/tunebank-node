@@ -1,6 +1,6 @@
 # Tunebank-node
 
-This is the backend for the [tunebank.org.uk](https://tunebank.org.uk) web site. The older tradtunedb site is being deprecated as is its backend - [musicrest](https://github.com/newlandsvalley/musicrest). The database for tunebank is `Postgres` and the web server framework is `HTTPurple`.
+This is the backend for the [tunebank.org.uk](https://tunebank.org.uk) web site. The database for tunebank is `Postgres` and the web server framework is `HTTPurple`. The older tradtunedb site on which it is based has been deprecated as is its backend - [musicrest](https://github.com/newlandsvalley/musicrest).
 
 ## _Usage_
 
