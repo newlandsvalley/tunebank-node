@@ -13,7 +13,8 @@ module Tunebank.Database.User
   , existsValidatedUser
   , insertExportedUser
   , insertUser
-  , validateUser
+  , validateUserFromHash
+  , validateUserFromUserName
   , changeUserPassword
   , validateCredentials
   ) where
@@ -104,12 +105,23 @@ getUserRecords paginationExpression c = do
   query_ read' (Query queryText :: Query UserRecord) c
 
 -- | validate a user by setting the valid flag if the hash corresponds
-validateUser :: String -> Client -> Aff Unit
-validateUser uuid c = do
+-- | this happens when the user clicks on a link that incorporates the hash code (UUID)
+validateUserFromHash :: String -> Client -> Aff Unit
+validateUserFromHash uuid c = do
   -- _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
   let
     query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
   execute (Query query) [ toSql uuid ] c
+
+
+-- | validate a user by setting the valid flag if the user name corresponds
+-- | this is used when if an administrator validates the user
+validateUserFromUserName :: UserName -> Client -> Aff Unit
+validateUserFromUserName user c = do
+  -- _ <- liftEffect $ logShow ("trying to authorise user with name " <> user)
+  let
+    query = "update users set valid = 'Y' where username = $1"
+  execute (Query query) [ toSql user ] c
 
 -- | change the users's password
 changeUserPassword :: UserName -> Password -> Client -> Aff Unit

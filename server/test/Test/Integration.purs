@@ -183,7 +183,8 @@ registerUser =
   it "registers the user" do
     awaitStarted 8080
     -- use Jim's registration id from the static SQL used to initialise the test database
-    _ <- get 8080 Object.empty "/user/register/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"
+    -- _ <- get 8080 Object.empty "/user/register/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"database
+    _ <- get 8080 Object.empty "/user/validate/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"
     response <- get 8080 Object.empty "/user/Jim"
     response `shouldStartWith` """{"valid":"Y"""
 

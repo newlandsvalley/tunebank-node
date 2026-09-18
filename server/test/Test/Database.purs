@@ -19,7 +19,8 @@ import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
-import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, getUserRecords, getUserRole, insertUser, validateCredentials, validateUser)
+import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, 
+       getUserRecords, getUserRole, insertUser, validateCredentials, validateUserFromHash, validateUserFromUserName)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Logging.Winston (createLogger)
@@ -80,12 +81,22 @@ userSpec = before_ flushUsers do
       res <- withDBConnection do
         insertUser newUser Unvalidated
       res `shouldEqual` Left (BadRequest ("username " <> newUser.name <> " is already taken"))
-    it "validates a user" do  
+    it "validates a user by hash" do  
       withDBConnection $ \c -> do 
         let 
           userName = "Jim"
         uuid <- getRegistrationId userName c
-        _ <- validateUser uuid c
+        _ <- validateUserFromHash uuid c
+        -- registration should set user.valid to 'Y'
+        mUser <- getUserRecord (UserName userName) c
+        let 
+          validity = map _.valid mUser
+        validity `shouldEqual` Just "Y" 
+    it "validates a user by user name" do  
+      withDBConnection $ \c -> do 
+        let 
+          userName = "Jim"
+        _ <- validateUserFromUserName (UserName userName) c
         -- registration should set user.valid to 'Y'
         mUser <- getUserRecord (UserName userName) c
         let 

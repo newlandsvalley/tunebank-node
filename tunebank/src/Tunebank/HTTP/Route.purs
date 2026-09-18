@@ -33,7 +33,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUser)
+import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUserFromHash, validateUserFromUserName)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
@@ -66,6 +66,7 @@ data Route
   | Users PagingParams
   | User UserName
   | UserValidate String
+  | AdminUserValidate UserName
   | CheckRequest
   | CatchAll (Array String)
 
@@ -119,6 +120,7 @@ route = root $ sum
       }
   , "User": "user" / userSeg
   , "UserValidate": "user" / "validate" / (string segment)
+  , "AdminUserValidate": "user" / "validate" / userSeg
   , "Comments": "genre" / genreSeg / "tune" / titleSeg / "comments"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
@@ -161,6 +163,7 @@ router { route: User _user, method: Options, headers } = preflightOptionsRoute h
 router { route: User user, method: Delete, headers } = deleteUserRoute user headers
 router { route: User user } = userRoute user
 router { route: UserValidate uuid } = validateUserRoute uuid
+router { route: AdminUserValidate user, headers } = validateUserByAdminRoute user headers
 router { route: CheckRequest, headers } = routeCheckRequest headers
 router { route: CatchAll paths } = routeError paths
 
@@ -434,12 +437,24 @@ deleteUserRoute user headers = do
       _result <- deleteUser user c
       ok' corsHeadersAllOrigins ""
 
+-- validation by the user himself by sending an OTP UUID
 validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
 validateUserRoute uuid = do
   dbpool :: Pool <- asks _.dbpool
   _ <- liftAff $ withClient dbpool $ do
-    validateUser uuid
+    validateUserFromHash uuid
   ok' corsHeadersAllOrigins "validated"
+
+-- validation by the admin
+validateUserByAdminRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response
+validateUserByAdminRoute user headers = do
+  dbpool :: Pool <- asks _.dbpool
+  liftAff $ withClient dbpool $ \c -> do
+    eAuth :: Either String Authorization <- getAuthorization headers c
+    withAdminAuthorization eAuth $ \_auth -> do
+      _result <- validateUserFromUserName user c
+      ok' corsHeadersAllOrigins "validated"
+
 
 -- | Receive the One-Time-Password UUID from the request body and email it to the user if we find her
 userNewPasswordOTPRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
