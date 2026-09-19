@@ -1,6 +1,6 @@
 {
   "name": "tunebank-node",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "type": "module",
   "description": "web server for ABC notation music",
   "directories": {
@@ -9,7 +9,7 @@
   "scripts": {
     "build-server": "cd server && spago build",
     "server": "cd server && spago run",
-    "bundle-server": "cd server && spago bundle --bundle-type app --platform node --outfile tunebank.js",
+    "bundle-server": "cd server && spago bundle --bundle-type app --platform node --outfile tunebank-server.js",
     "build-migration": "cd migration && spago build",
     "bundle-migration": "cd migration && spago bundle --bundle-type app --platform node --outfile migrate.js",
     "build-importation": "cd importation && spago build",

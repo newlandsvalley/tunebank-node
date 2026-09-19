@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.2.0
+
+  * Change the name the generated tunebank server to `tunebank-server.js` from `tunebank.js`
+
 ## v0.1.2
 
   * Add slow air to Irish rhythms

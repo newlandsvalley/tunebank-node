@@ -6,6 +6,7 @@ server/conf/tunebank.yaml
 installation/SQL/dbroles.sql
 node_modules/
 server/tunebank.js
+server/tunebank-server.js
 server/logs/*.log
 server/logs/*-audit.json
 importation/import.js

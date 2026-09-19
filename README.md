@@ -79,16 +79,16 @@ The `server/testdata/abc-samples` directory contains a set of Scandi tunes in AB
 
 ### Security
 
-Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a version of `dbroles-test.sql` perhaps named `dbtoles-production.sql` with your own database user name and password and provide a version of `tunebank.conf` which uses this names and password. In addition, you will need to use your own SMTP service and configure it appropriately.
+Once you have successfully run the tests, you are in a position to install a production server.  You should create a Postgres database with a production database name, provide a version of `dbroles-test.sql` perhaps named `dbroles-production.sql` with your own database user name and password and provide a version of `tunebank.conf` which uses this names and password. In addition, you will need to use your own SMTP service and configure it appropriately.
 
 ### Running the Production Server
 
   * Ensure node is installed on your production server
-  * Bundle the app into a single file `tunebank.js` using `npm run bundle-server`.
-  * Create a home directory to house your server and copy tunebank.js to it.
-  * Make it executable - `chmod 777 tunebank.js`
+  * Bundle the app into a single file `tunebank-server.js` using `npm run bundle-server`.
+  * Create a home directory to house your server and copy `tunebank-server.js` to it.
+  * Make it executable - `chmod 777 tunebank-server.js`
   * Create a subdirectory `conf` and copy into it your production tunebank.conf
-  * Run using `./tunebank.js`.
+  * Run using `./tunebank-server.js`.
   * (You can then set up appropriate scripting for running as a background service)
 
 ## Migration from Musicrest
