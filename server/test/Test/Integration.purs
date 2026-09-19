@@ -17,7 +17,7 @@ import Test.HTTPurple.TestHelpers (Test, awaitStarted, delete, get, getHeader, g
 import Test.Spec (before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
 import Test.Spec.Assertions.String (shouldStartWith)
-import Test.Utils (getInitialCommentId, getTestCommentId, removeUser, withDBConnection)
+import Test.Utils (getInitialCommentId, getTestCommentId, getUserRegistrationId, removeUser, unregisterUser, withDBConnection)
 
 -- | Integration tests requre that there is a running tunebank server on localhost:8080
 
@@ -43,6 +43,7 @@ getRequestsSpec =
     getUsersPage2
     getUsersForbidden
     registerUser
+    adminRegisterUser
     checkUser
     checkUnknownUser
     getUserName
@@ -179,14 +180,29 @@ getUsersForbidden =
 
 
 registerUser :: Test
-registerUser =
+registerUser = before_ (unregisterUser "Jim") do
   it "registers the user" do
+    -- set valid flag for Jim to 'N'
+    _ <- unregisterUser "Jim"
+    -- get his uuid
+    uuid <- getUserRegistrationId "Jim"
     awaitStarted 8080
-    -- use Jim's registration id from the static SQL used to initialise the test database
-    -- _ <- get 8080 Object.empty "/user/register/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"database
-    _ <- get 8080 Object.empty "/user/validate/c78d39ac-5620-4b16-8c72-7a88e1dedfe8"
+    _ <- get 8080 Object.empty ("/user/validate/" <> uuid)
     response <- get 8080 Object.empty "/user/Jim"
     response `shouldStartWith` """{"valid":"Y"""
+
+
+adminRegisterUser :: Test
+adminRegisterUser = before_ (unregisterUser "Jim") do
+  it "registers the user by an administrator"  do
+    let 
+      user = "Jim"
+    _ <- unregisterUser user
+    awaitStarted 8080
+    _ <- get 8080 adminAuthHeaders ("/user/adminvalidate/" <> user)
+    response <- get 8080 Object.empty ("/user/" <> user)
+    response `shouldStartWith` """{"valid":"Y"""
+
 
 checkUser :: Test
 checkUser =

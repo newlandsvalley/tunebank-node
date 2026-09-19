@@ -6,8 +6,10 @@ module Test.Utils
   , getTestCommentId 
   , getInitialCommentId
   , getRegistrationId
+  , getUserRegistrationId
   , removeCommentsFrom
   , removeUser
+  , unregisterUser
   , withDBConnection) 
   where
 
@@ -24,7 +26,7 @@ import Effect.Now (now)
 import Yoga.Postgres (Query(Query), Client, ClientConfig, queryValue_, queryValue, mkPool, withClient)
 import Yoga.Postgres.SqlValue (toSql)
 import Tunebank.Database.Utils (maybeIntResult, maybeStringResult)
-import Tunebank.Database.User (deleteUser)
+import Tunebank.Database.User (deleteUser, updateUserValidity)
 import Tunebank.Environment (connectionInfo)
 import Tunebank.Database.Comment (getComments, deleteComments)
 import Tunebank.Types (Authorization, Genre(..), UserName(..), Role(..), Title(..))
@@ -66,6 +68,21 @@ getRegistrationId user c = do
     Just uuid -> 
       pure uuid
 
+-- | as for getRegistrationId but on a separate DB client connection
+getUserRegistrationId :: String -> Aff String
+getUserRegistrationId user = 
+  withDBConnection do 
+    getRegistrationId user
+
+
+-- | unregister a user so that we can re-run a registration test
+unregisterUser :: String -> Aff Unit
+unregisterUser user = 
+  withDBConnection do 
+    updateUserValidity (UserName user) false
+
+
+-- | delete a user record
 removeUser :: String -> Aff Unit 
 removeUser user = 
   withDBConnection do 

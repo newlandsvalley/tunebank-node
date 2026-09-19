@@ -33,7 +33,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUserFromHash, validateUserFromUserName)
+import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUserFromHash, updateUserValidity)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
@@ -120,7 +120,7 @@ route = root $ sum
       }
   , "User": "user" / userSeg
   , "UserValidate": "user" / "validate" / (string segment)
-  , "AdminUserValidate": "user" / "validate" / userSeg
+  , "AdminUserValidate": "user" / "adminvalidate" / userSeg
   , "Comments": "genre" / genreSeg / "tune" / titleSeg / "comments"
   , "Comment": "comment" / (int segment)
   , "CheckRequest": "check" / noArgs
@@ -452,7 +452,7 @@ validateUserByAdminRoute user headers = do
   liftAff $ withClient dbpool $ \c -> do
     eAuth :: Either String Authorization <- getAuthorization headers c
     withAdminAuthorization eAuth $ \_auth -> do
-      _result <- validateUserFromUserName user c
+      _result <- updateUserValidity user true c
       ok' corsHeadersAllOrigins "validated"
 
 

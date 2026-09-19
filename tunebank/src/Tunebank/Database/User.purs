@@ -14,7 +14,7 @@ module Tunebank.Database.User
   , insertExportedUser
   , insertUser
   , validateUserFromHash
-  , validateUserFromUserName
+  , updateUserValidity
   , changeUserPassword
   , validateCredentials
   ) where
@@ -114,14 +114,15 @@ validateUserFromHash uuid c = do
   execute (Query query) [ toSql uuid ] c
 
 
--- | validate a user by setting the valid flag if the user name corresponds
+-- | set/reset the valid flag if the user name corresponds
 -- | this is used when if an administrator validates the user
-validateUserFromUserName :: UserName -> Client -> Aff Unit
-validateUserFromUserName user c = do
-  -- _ <- liftEffect $ logShow ("trying to authorise user with name " <> user)
+updateUserValidity :: UserName -> Boolean -> Client -> Aff Unit
+updateUserValidity user isValid c = do
+  -- _ <- liftEffect $ logShow ("trying to change user validation with name " <> user)
   let
-    query = "update users set valid = 'Y' where username = $1"
-  execute (Query query) [ toSql user ] c
+    validity = if isValid then "Y" else "N"
+    query = "update users set valid = $1 where username = $2"
+  execute (Query query) [ toSql validity, toSql user ] c
 
 -- | change the users's password
 changeUserPassword :: UserName -> Password -> Client -> Aff Unit
