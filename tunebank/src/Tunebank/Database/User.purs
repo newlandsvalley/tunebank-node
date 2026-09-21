@@ -9,6 +9,7 @@ module Tunebank.Database.User
   , getUserRecord
   , getUserRecords
   , getUserRole
+  , getUserValidity
   , existsUser
   , existsValidatedUser
   , insertExportedUser
@@ -230,4 +231,10 @@ getUserPassword userName c = do
   -- _ <- liftEffect $ logShow ("trying to find password for user of name " <> (show userName))
   mPassword <- queryValue maybeStringResult (Query "select passwd from users where username = $1 and valid = 'Y'" :: Query (Maybe String)) [ toSql userName ] c
   pure $ join mPassword
+
+getUserValidity :: UserName -> Client -> Aff (Maybe String)
+getUserValidity userName c = do
+  -- _ <- liftEffect $ logShow ("trying to find validity for user of name " <> (show userName))
+  mValidity <- queryValue maybeStringResult (Query "select valid from users where username = $1 " :: Query (Maybe String)) [ toSql userName ] c
+  pure $ join mValidity
 

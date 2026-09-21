@@ -3,6 +3,8 @@
 ## v0.2.0
 
   * Change the name the generated tunebank server to `tunebank-server.js` from `tunebank.js`
+  * Add more user maintenance database functions
+  * Add an adminvalidate route which allows an administrator to validate a user
 
 ## v0.1.2
 

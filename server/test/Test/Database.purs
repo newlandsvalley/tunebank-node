@@ -13,14 +13,14 @@ import Effect.Console (log)
 import Prelude (Unit, bind, discard, map, pure, show, unit, ($), (<>))
 import Test.Spec (Spec, before_, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
-import Test.Utils (adminAuth, fastan, generatePostgresTimestamp, getInitialCommentId, getRegistrationId, withDBConnection)
+import Test.Utils (adminAuth, fastan, generatePostgresTimestamp, getInitialCommentId, getRegistrationId, unregisterUser, withDBConnection)
 import Tunebank.Database.Comment (getComments, deleteComment, deleteComments, insertComment, updateComment)
 import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
 import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, 
-       getUserRecords, getUserRole, insertUser, validateCredentials, validateUserFromHash, updateUserValidity)
+       getUserRecords, getUserRole, getUserValidity, insertUser, validateCredentials, validateUserFromHash, updateUserValidity)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Logging.Winston (createLogger)
@@ -64,6 +64,18 @@ userSpec = before_ flushUsers do
     it "finds all users" do
       res <- withDBConnection $ getUserRecords defaultPaginationExpression
       length res `shouldEqual` 5
+    it "checks a valid user" do
+      res <- withDBConnection $ getUserValidity (UserName "administrator")
+      res `shouldEqual` (Just "Y")
+    it "checks an invalid user" do
+      let 
+        userName = "Jim"
+      _ <- unregisterUser userName
+      res <- withDBConnection $ getUserValidity (UserName userName)
+      res `shouldEqual` (Just "N")
+    it "checks a non-existant user" do
+      res <- withDBConnection $ getUserValidity (UserName "NotAKnownUser")
+      res `shouldEqual` Nothing
     it "inserts a new (as yet unregistered) user" do
       let 
         newUser :: NewUser
