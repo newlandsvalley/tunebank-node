@@ -1,6 +1,5 @@
 module Tunebank.Database.User
-  ( UserValidity(..)
-  , assertKnownUser
+  ( assertKnownUser
   , assertIsAdministrator
   , deleteUser
   , getUserCount
@@ -13,7 +12,8 @@ module Tunebank.Database.User
   , existsUser
   , existsValidatedUser
   , insertExportedUser
-  , insertUser
+  , upsertUser
+  , upsertPrevalidatedUser
   , validateUserFromHash
   , updateUserValidity
   , changeUserPassword
@@ -34,10 +34,6 @@ import Tunebank.Types (Authorization, Credentials, Email, NewUser, Password, Use
 import Yoga.Postgres (Query(Query), Client, execute, query_, queryOne, queryValue, queryValue_)
 import Yoga.Postgres.SqlValue (toSql)
 
--- | Validity of a user about to be inserted
-data UserValidity
-  = Unvalidated
-  | Prevalidated
 
 -- | return true if the user exists and is validated
 existsValidatedUser :: UserName -> Client -> Aff Boolean
@@ -63,6 +59,18 @@ getValidityFromEmail email c = do
   -- _ <- liftEffect $ logShow ("trying to get user validity for email" <> email)
   mValidity <- queryValue maybeStringResult (Query "select valid from users where email = $1" :: Query (Maybe String)) [ toSql email ] c
   pure $ join mValidity
+
+
+-- | get the user name from the email address if she exists
+-- | result options are:
+-- |   Nothing  - no user is using the email
+-- |   Just "<name>£ - a user is using the email
+getUserNameFromEmail :: Email -> Client -> Aff (Maybe String)
+getUserNameFromEmail email c = do
+  -- _ <- liftEffect $ logShow ("trying to get user validity for email" <> email)
+  mUserName <- queryValue maybeStringResult (Query "select username from users where email = $1" :: Query (Maybe String)) [ toSql email ] c
+  pure $ join mUserName
+
 
 validateCredentials :: Credentials -> Client -> Aff (Either String Authorization)
 validateCredentials credentials c = do
@@ -137,24 +145,94 @@ deleteUser user c = do
   -- _ <- liftEffect $ logShow ("trying to delete user " <> user)
   execute (Query "delete from users where username = $1") [ toSql user ] c
 
--- | insert an as yet unvalidated user, returning the UUID needed for the eventual validation
-insertUser :: NewUser -> UserValidity -> Client -> Aff (Either ResponseError String)
-insertUser newUser userValidity c = do
+-- | upsert a new user.  This is intended to be called from the server module for registering a new user
+-- | A variety of cases can occur:
+-- |  - the new user is already properly registered - no need to do anything
+-- |  - the new user name has been taken by another user - error
+-- |  - the new user email address has been taken by another user - error
+-- |  - the current user has not managed to complete the validation and is trying again - OK
+-- |  - this is a completely new user and email address - OK - the default case
+upsertUser :: NewUser -> Client -> Aff (Either ResponseError String)
+upsertUser newUser c = do
+  mExistingUserValidity <- getUserValidity (UserName newUser.name) c
+  mExistingUserName <- getUserNameFromEmail newUser.email c
+  case mExistingUserValidity of 
+    Just "Y" -> do
+      -- this user has already registered - no need to alter the validity
+      pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
+    Just _ -> do           
+      case mExistingUserName of 
+        Nothing -> 
+          -- no-one has claimed this email address (which may differ from the one currently on record)
+          -- we have a user record which has not been validated, so update the record
+          updateNewUser
+        Just existingName -> 
+          -- no user has bagged this email address
+          if (existingName ==  newUser.name) then do
+            -- our user has bagged this email address  before but not completed his registration  
+            updateNewUser
+            -- pure $ Left $ BadRequest (" update user to do")
+          else 
+            -- a different user has bagged this email address
+            pure $ Left $ BadRequest ("email " <> newUser.email <> " is already taken by another user")
+    Nothing -> do     
+      case mExistingUserName of 
+        Nothing -> 
+          -- no user has bagged this email address
+          insertNewUser
+          -- pure $ Left $ BadRequest (" insert user to do")
+        Just existingName -> 
+          if (existingName ==  newUser.name) then do
+            -- shouldn't happen.  At this stage, there's no user record because there is no validity flag for this user name
+            -- so we shouldn't find that this email address belongs to the new user name
+            -- let's just insert, but really it's a no-op
+            insertNewUser
+            -- pure $ Left $ BadRequest (" update user to do")
+          else 
+            -- a different user has bagged this email address
+            pure $ Left $ BadRequest ("email " <> newUser.email <> " is already taken by another user")
+      -- pure $ Left $ BadRequest (" insert user to do")
+
+    where 
+      insertNewUser :: Aff (Either ResponseError String)
+      insertNewUser = do
+        let queryText =  ( "insert into users (username, rolename, passwd, email, valid) "
+                <> " values ($1, 'normaluser', $2, $3, 'N')"
+                <> " returning CAST(registrationid AS CHAR(36))" )
+        mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String))
+                     [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
+                     c
+        pure $ note (InternalServerError $ "user creation failed for " <> newUser.name) (join mResult)
+
+
+      updateNewUser :: Aff (Either ResponseError String)
+      updateNewUser = do
+        let queryText =  ( "update users set email = $1, passwd = $2 where username = $3 "
+                          <> " returning CAST(registrationid AS CHAR(36))" )
+        mResult <- queryValue maybeStringResult (Query queryText :: Query (Maybe String))
+                     [ toSql newUser.email, toSql newUser.password, toSql newUser.name ]
+                     c
+        pure $ note (InternalServerError $ "user creation failed for " <> newUser.name) (join mResult)
+
+
+-- | upsert a pre-validate user, returning the UUID needed from the validation
+-- | This is called from the migration module where the user does pre-exist and 
+-- | so the validity is set to 'Y' and is also used in test setup code.
+upsertPrevalidatedUser :: NewUser -> Client -> Aff (Either ResponseError String)
+upsertPrevalidatedUser newUser c = do
   userAlreadyExists <- existsUser (UserName newUser.name) c
   mExistingValidity <- getValidityFromEmail newUser.email c
   if (userAlreadyExists) then do
-    -- _ <- liftEffect $ logShow ("username " <> newUser.name <> " is already taken")
     pure $ Left $ BadRequest ("username " <> newUser.name <> " is already taken")
   else if (mExistingValidity == Just "Y") then do
     pure $ Left $ BadRequest ("email " <> newUser.email <> " is already taken by another user")
   else do
     let
-      valid = validity userValidity
       queryText =
         case mExistingValidity of
           Nothing ->
             ( "insert into users (username, rolename, passwd, email, valid) "
-                <> " values ($1, 'normaluser', $2, $3, $4 )"
+                <> " values ($1, 'normaluser', $2, $3, 'Y' )"
                 <> " returning CAST(registrationid AS CHAR(36))"
             )
           _ {- Just "N" -} ->
@@ -162,21 +240,11 @@ insertUser newUser userValidity c = do
                 <> " returning CAST(registrationid AS CHAR(36))"
             )
     -- _ <- liftEffect $ logShow ("trying to insert an as yet unregistered user " <> newUser.name)
-    mResult <- case mExistingValidity of
-      Nothing ->
-        queryValue maybeStringResult (Query queryText :: Query (Maybe String))
-          [ toSql newUser.name, toSql newUser.password, toSql newUser.email, toSql valid ]
-          c
-      _ ->
-        queryValue maybeStringResult (Query queryText :: Query (Maybe String))
-          [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
-          c
+    mResult <-  queryValue maybeStringResult (Query queryText :: Query (Maybe String))
+                  [ toSql newUser.name, toSql newUser.password, toSql newUser.email ]
+                  c
     pure $ note (InternalServerError $ "user creation failed for " <> newUser.name) (join mResult)
 
-  where
-  validity :: UserValidity -> String
-  validity Unvalidated = "N"
-  validity Prevalidated = "Y"
 
 -- | insert a full user record (with all fields generated by the database after an export)
 -- | used for import

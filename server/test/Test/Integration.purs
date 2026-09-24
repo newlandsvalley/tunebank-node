@@ -246,11 +246,11 @@ updateExistingUser :: Test
 updateExistingUser = 
   it "allows update of an existing user if she's not yet validated" do
   let 
-    newUser = """{"name":"DonaldTrump","password":"changeit","email":"donald@truthsocial.com"}"""  
-    updatedUser = """{"name":"IvankaTrump","password":"changeit","email":"donald@truthsocial.com"}"""  
+    newUser = """{"name":"DonaldTrump","password":"changeit","email":"donald@gmail.com"}"""  
+    updatedUser = """{"name":"DonaldTrump","password":"changeit","email":"donald@truthsocial.com"}"""  
   _ <- post 8080 Object.empty "/user" newUser 
   response <- post 8080 Object.empty "/user" updatedUser 
-  response `shouldEqual` "User: IvankaTrump created."
+  response `shouldEqual` "User: DonaldTrump created."
 
 enforceUniqueEmail :: Test
 enforceUniqueEmail = 

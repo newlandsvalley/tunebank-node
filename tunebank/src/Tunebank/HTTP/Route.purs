@@ -33,7 +33,7 @@ import Tunebank.Database.Genre (getGenres)
 import Tunebank.Database.Rhythm (getRhythmsForGenre)
 import Tunebank.Database.Search (SearchParams, buildSearchExpression, defaultSearchParams)
 import Tunebank.Database.Tune (getTuneAbc, getTuneMetadata, deleteTune, upsertTune)
-import Tunebank.Database.User (UserValidity(..), changeUserPassword, deleteUser, getUserName, getUserRecord, insertUser, validateUserFromHash, updateUserValidity)
+import Tunebank.Database.User (changeUserPassword, deleteUser, getUserName, getUserRecord, upsertUser, validateUserFromHash, updateUserValidity)
 import Tunebank.Environment (Env)
 import Tunebank.HTTP.Authentication (getAuthorization, withAdminAuthorization, withAnyAuthorization, validateCorsOrigin)
 import Tunebank.HTTP.Headers (abcHeaders, corsHeadersOrigin, corsHeadersAllOrigins, midiHeaders, preflightOrigin)
@@ -157,7 +157,7 @@ router { route: UserNewPasswordOTP, body } = userNewPasswordOTPRoute body
 router { route: UserGetName, method: Options, headers } = preflightOptionsRoute headers
 router { route: UserGetName, body } = userGetNameRoute body
 router { route: Users _params, method: Options, headers } = preflightOptionsRoute headers
-router { route: Users _params, method: Post, body } = insertUserRoute body
+router { route: Users _params, method: Post, body } = upsertUserRoute body
 router { route: Users params, headers } = usersRoute params headers
 router { route: User _user, method: Options, headers } = preflightOptionsRoute headers
 router { route: User user, method: Delete, headers } = deleteUserRoute user headers
@@ -401,8 +401,8 @@ userRoute user = do
     mJson = map (stringify <<< encodeUserRecord) mUser
   maybe notFound (ok' (jsonHeaders <> corsHeadersAllOrigins)) mJson
 
-insertUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
-insertUserRoute body = do
+upsertUserRoute :: forall m. MonadAff m => MonadAsk Env m => RequestBody -> m Response
+upsertUserRoute body = do
   jsonString <- Body.toString body
   {- eNewUser :: Either JsonDecodeError NewUser -}
   case (decodeNewUser jsonString) of
@@ -411,7 +411,7 @@ insertUserRoute body = do
     Right newUser -> do
       dbpool :: Pool <- asks _.dbpool
       eResult <- liftAff $ withClient dbpool $ do
-        insertUser newUser Unvalidated
+        upsertUser newUser
 
       case eResult of
         Right uuid -> do

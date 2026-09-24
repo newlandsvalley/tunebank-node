@@ -19,8 +19,8 @@ import Tunebank.Database.Genre (existsGenre, getGenreStrings)
 import Tunebank.Database.Rhythm (existsRhythm, getRhythmStrings)
 import Tunebank.Database.Search (SearchCriterion(..), SearchOperator(..), buildSearchExpressionString)
 import Tunebank.Database.Tune (countSelectedTunes, getTuneMetadata, getTuneAbc, getTuneRefs)
-import Tunebank.Database.User (UserValidity(..), deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, 
-       getUserRecords, getUserRole, getUserValidity, insertUser, validateCredentials, validateUserFromHash, updateUserValidity)
+import Tunebank.Database.User (deleteUser, changeUserPassword, getUserName, getUserPassword, existsUser, getUserRecord, 
+       getUserRecords, getUserRole, getUserValidity, upsertPrevalidatedUser, upsertUser, validateCredentials, validateUserFromHash, updateUserValidity)
 import Tunebank.HTTP.Response (ResponseError(..))
 import Tunebank.Logic.Api (upsertValidatedTuneWithTs)
 import Tunebank.Logging.Winston (createLogger)
@@ -63,7 +63,7 @@ userSpec = before_ flushUsers do
       res `shouldEqual` Nothing
     it "finds all users" do
       res <- withDBConnection $ getUserRecords defaultPaginationExpression
-      length res `shouldEqual` 5
+      length res `shouldEqual` 6
     it "checks a valid user" do
       res <- withDBConnection $ getUserValidity (UserName "administrator")
       res `shouldEqual` (Just "Y")
@@ -76,13 +76,13 @@ userSpec = before_ flushUsers do
     it "checks a non-existant user" do
       res <- withDBConnection $ getUserValidity (UserName "NotAKnownUser")
       res `shouldEqual` Nothing
-    it "inserts a new (as yet unregistered) user" do
+    it "inserts (via upsert) a new (as yet unregistered) user" do
       let 
         newUser :: NewUser
         newUser = { name: "NewUser", password: "changeit", email: "newuser@google.com" }
       -- this should return Right (UUID String) of 36 characters
       res <- withDBConnection do
-        insertUser newUser Unvalidated
+        upsertUser newUser
       let 
         lengthRes = rmap STRING.length res      
       lengthRes `shouldEqual` (Right 36)
@@ -91,8 +91,40 @@ userSpec = before_ flushUsers do
         newUser :: NewUser
         newUser = { name: "John", password: "changeit", email: "john@google.com" }     
       res <- withDBConnection do
-        insertUser newUser Unvalidated
+        upsertUser newUser
       res `shouldEqual` Left (BadRequest ("username " <> newUser.name <> " is already taken"))
+    it "does not insert a new user if the email address is taken" do
+      let 
+        email = "john.watson@gmx.co.uk"
+        newUser :: NewUser
+        newUser = { name: "Jemima", password: "changeit", email: email }     
+      res <- withDBConnection do
+        upsertUser newUser
+      res `shouldEqual` Left (BadRequest ("email " <> email <> " is already taken by another user"))
+    it "updates an as yet unvalidated/unregistered user with an existing user record but with changed email address" do
+      let 
+        userName = "Jim"
+        newUser :: NewUser
+        newUser = { name: userName, password: "changeit", email: "jim@now.google.com" }
+      _ <- unregisterUser userName
+      -- this should return Right (UUID String) of 36 characters
+      res <- withDBConnection do
+        upsertUser newUser
+      let 
+        lengthRes = rmap STRING.length res      
+      lengthRes `shouldEqual` (Right 36)
+    it "updates an as yet unvalidated/unregistered user with an existing user record but with identical details" do
+      let 
+        userName = "Jim"
+        newUser :: NewUser
+        newUser = { name: userName, password: "changeit", email: "jim@aol.com" }
+      _ <- unregisterUser userName
+      -- this should return Right (UUID String) of 36 characters
+      res <- withDBConnection do
+        upsertUser newUser
+      let 
+        lengthRes = rmap STRING.length res      
+      lengthRes `shouldEqual` (Right 36)
     it "validates a user by hash" do  
       withDBConnection $ \c -> do 
         let 
@@ -126,7 +158,7 @@ userSpec = before_ flushUsers do
           newUser :: NewUser
           newUser = { name: "KeirStarmer", password: "changeit", email: "keirstarmer@google.com" }
           user = UserName "KeirStarmer"
-        _ <- insertUser newUser Prevalidated c
+        _ <- upsertPrevalidatedUser newUser c
         _ <- changeUserPassword user "NewPassword" c
         mPassword <- getUserPassword user c
         mPassword `shouldEqual` Just "NewPassword"
@@ -315,7 +347,7 @@ flushUsers= do
     let 
       tonyBlair :: NewUser
       tonyBlair = { name: "TonyBlair", password: "changeit", email: "tony@blairfoundation.com" }     
-    _ <- insertUser tonyBlair Prevalidated c
+    _ <- upsertPrevalidatedUser tonyBlair c
     pure unit
 
 deleteAllScandiTunes :: Client -> Aff Unit 

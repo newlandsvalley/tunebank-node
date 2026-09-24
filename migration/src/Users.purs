@@ -15,7 +15,7 @@ import Data.String (length)
 import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
 import Effect.Aff (Aff, catchError)
-import Tunebank.Database.User (UserValidity(..), insertUser)
+import Tunebank.Database.User (upsertPrevalidatedUser)
 import Tunebank.HTTP.Response (ResponseError)
 import Tunebank.Types (NewUser)
 import Yoga.Postgres (Client)
@@ -76,6 +76,6 @@ migrateUser musicrestUser c = do
       , password: musicrestUser.password
       }
   catchError
-    (insertUser newUser Prevalidated c)
+    (upsertPrevalidatedUser newUser c)
     handleException
 
