@@ -5,6 +5,7 @@
   * Change the name the generated tunebank server to `tunebank-server.js` from `tunebank.js`
   * Add more user maintenance database functions
   * Add an adminvalidate route which allows an administrator to validate a user
+  * Replace insetUser with upsertUser.  This allows a user to have further attempts at registration if the first one fails
 
 ## v0.1.2
 
