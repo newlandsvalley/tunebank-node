@@ -441,9 +441,11 @@ deleteUserRoute user headers = do
 validateUserRoute :: forall m. MonadAff m => MonadAsk Env m => String -> m Response
 validateUserRoute uuid = do
   dbpool :: Pool <- asks _.dbpool
-  _ <- liftAff $ withClient dbpool $ do
-    validateUserFromHash uuid
-  ok' corsHeadersAllOrigins "validated"
+  liftAff $ withClient dbpool $ \c -> do
+    bResult <- validateUserFromHash uuid c
+    case bResult of
+      true -> ok' corsHeadersAllOrigins "validated"
+      false ->  customBadRequest "registration validation code not recognised"
 
 -- validation by the admin
 validateUserByAdminRoute :: forall m. MonadAff m => MonadAsk Env m => UserName -> RequestHeaders -> m Response

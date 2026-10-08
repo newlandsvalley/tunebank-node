@@ -130,12 +130,19 @@ userSpec = before_ flushUsers do
         let 
           userName = "Jim"
         uuid <- getRegistrationId userName c
-        _ <- validateUserFromHash uuid c
+        isSuccess  <- validateUserFromHash uuid c
+        isSuccess `shouldEqual` true
         -- registration should set user.valid to 'Y'
         mUser <- getUserRecord (UserName userName) c
         let 
           validity = map _.valid mUser
         validity `shouldEqual` Just "Y" 
+    it "doesn't validate an unknown hash" do  
+      withDBConnection $ \c -> do 
+        let           
+           uuid = "onecompletelymadeup36characterstring"
+        isSuccess  <- validateUserFromHash uuid c
+        isSuccess `shouldEqual` false
     it "validates a user by user name" do  
       withDBConnection $ \c -> do 
         let 

@@ -115,12 +115,16 @@ getUserRecords paginationExpression c = do
 
 -- | validate a user by setting the valid flag if the hash corresponds
 -- | this happens when the user clicks on a link that incorporates the hash code (UUID)
-validateUserFromHash :: String -> Client -> Aff Unit
+-- | return true if exactly one row has been updated (i.e. the user registration is validated)
+validateUserFromHash :: String -> Client -> Aff Boolean
 validateUserFromHash uuid c = do
   -- _ <- liftEffect $ logShow ("trying to authorise user with uuid " <> uuid)
   let
-    query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1"
-  execute (Query query) [ toSql uuid ] c
+    query = "update users set valid = 'Y' where CAST(registrationid AS CHAR(36)) = $1 returning valid"
+  mResult :: Maybe (Maybe String) <- queryValue maybeStringResult (Query query) [ toSql uuid ] c
+  case (join mResult) of 
+    Just "Y" -> pure true
+    _ -> pure false
 
 
 -- | set/reset the valid flag if the user name corresponds

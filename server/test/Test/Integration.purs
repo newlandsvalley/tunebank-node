@@ -43,6 +43,7 @@ getRequestsSpec =
     getUsersPage2
     getUsersForbidden
     registerUser
+    unrecognisedUserRegistrationCode
     adminRegisterUser
     checkUser
     checkUnknownUser
@@ -190,6 +191,19 @@ registerUser = before_ (unregisterUser "Jim") do
     _ <- get 8080 Object.empty ("/user/validate/" <> uuid)
     response <- get 8080 Object.empty "/user/Jim"
     response `shouldStartWith` """{"valid":"Y"""
+
+unrecognisedUserRegistrationCode :: Test
+unrecognisedUserRegistrationCode = do
+  it "doesn't register user with unrecognised UUID"do
+    let 
+      uuid = "onecompletelymadeup36characterstring"
+    awaitStarted 8080
+    {-
+    response <- get 8080 Object.empty ("/user/validate/" <> uuid)
+    response `shouldStartWith` """{"valid":"Y"""
+    -}
+    responseStatus <- getStatus 8080 unknownAuthHeaders ("/user/validate/" <> uuid)
+    responseStatus ?= 400 -- bad request
 
 
 adminRegisterUser :: Test
