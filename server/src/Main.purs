@@ -32,7 +32,7 @@ main = launchAff_ do
 runServer :: TunebankConfig -> ServerAffM
 runServer config = do
   env <- liftEffect $ buildEnv config
-  _ <- liftEffect $ logInfo env.logger "Tunebank starting"
+  _ <- liftEffect $ logInfo env.logger "Tunebank v0.2.1 starting"
 
   liftEffect $ serve' (\a -> runReaderT a env) { hostname: config.server.host, port: config.server.port, onStarted } { route, router }
   where
