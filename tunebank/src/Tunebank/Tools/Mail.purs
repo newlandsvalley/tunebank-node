@@ -31,10 +31,7 @@ sendRegistrationMail :: forall m. MonadAff m => MonadAsk Env m => Email -> Strin
 sendRegistrationMail toAddress uuid = do
   config :: MailConfig <- asks _.mail
   let
-    -- this is the validation URL we would use were we to have direct communication from the frontend 
-    -- but we intend to proxy requests from the frontend 'https://frontend-server/tunebank' to here
-    -- validationUrl = "http://" <> serverConfig.host <> ":" <> show serverConfig.port <> "/user/validate/" <> uuid
-    validationUrl = "https://" <> config.frontend <> "/tunebank/user/validate/" <> uuid
+    validationUrl = "https://" <> config.frontend <> "/#/validateregistration/" <> uuid
     subject = "Tunebank user registration"
     text = "click on this link to complete your user registration: " <> validationUrl
   sendMail toAddress subject text

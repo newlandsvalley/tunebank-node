@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## v0.2.0
+## v0.2.1 (2026-10-10)
+
+  * Registration completion email now sends link to the frontend
+
+## v0.2.0 (2026-09-24)
 
   * Change the name the generated tunebank server to `tunebank-server.js` from `tunebank.js`
   * Add more user maintenance database functions
